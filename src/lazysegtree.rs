@@ -115,26 +115,40 @@ impl<T: MapMonoid> LazySegtree<T> {
         }
     }
 
-    // TODO:
-    // In this implementation, T::S::operate require commutative law.
-    // Is there any good solution to remove it without using recursion.
     pub fn query<R: RangeBounds<usize>>(&mut self, range: R) -> <T::S as Monoid>::S {
+        enum StackState {
+            Query(usize, usize, usize),
+            Value(usize),
+        }
+
+        // TODO:
+        // I think this loop will accumulate node[p_1], node[p_2], .., node[p_n] into res in the
+        // order so that l = l_1, r_i = l_{i + 1} and r_n = r when the range of node[p_i] is [l_i, r_i).
+        // Is this correct?
         let (l, r) = range_normalize(range, 0, self.n);
-        let mut stack = Vec::new();
-        stack.push((0, 0, self.leaf_len()));
         let mut res = T::S::identity();
-        while let Some((p, pl, pr)) = stack.pop() {
-            self.propagate(p);
-            if pr <= l || r <= pl {
-                continue;
-            } else if l <= pl && pr <= r {
-                res = T::S::operate(&res, &self.node[p]);
-            } else {
-                let mid = (pl + pr) / 2;
-                stack.push((p * 2 + 2, mid, pr));
-                stack.push((p * 2 + 1, pl, mid));
+        let mut stack = Vec::new();
+        stack.push(StackState::Query(0, 0, self.leaf_len()));
+        while let Some(state) = stack.pop() {
+            match state {
+                StackState::Query(p, pl, pr) => {
+                    self.propagate(p);
+                    if pr <= l || r <= pl {
+                        continue;
+                    } else if l <= pl && pr <= r {
+                        stack.push(StackState::Value(p));
+                    } else {
+                        let mid = (pl + pr) / 2;
+                        stack.push(StackState::Query(p * 2 + 2, mid, pr));
+                        stack.push(StackState::Query(p * 2 + 1, pl, mid));
+                    }
+                }
+                StackState::Value(p) => {
+                    res = T::S::operate(&res, &self.node[p]);
+                }
             }
         }
+        println!();
         res
     }
 
