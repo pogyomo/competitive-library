@@ -43,7 +43,7 @@ impl_int! {
 pub trait Monoid {
     type S: Clone;
     fn identity() -> Self::S;
-    fn composition(a: &Self::S, b: &Self::S) -> Self::S;
+    fn operate(a: &Self::S, b: &Self::S) -> Self::S;
 }
 
 pub struct Additive<T>(PhantomData<fn() -> T>);
@@ -55,7 +55,7 @@ impl<T: AdditiveIdentity + Clone> Monoid for Additive<T> {
         T::id()
     }
 
-    fn composition(a: &Self::S, b: &Self::S) -> Self::S {
+    fn operate(a: &Self::S, b: &Self::S) -> Self::S {
         a.clone() + b.clone()
     }
 }
@@ -69,7 +69,7 @@ impl<T: MaxIdentity + Clone> Monoid for Max<T> {
         T::id()
     }
 
-    fn composition(a: &Self::S, b: &Self::S) -> Self::S {
+    fn operate(a: &Self::S, b: &Self::S) -> Self::S {
         max(a.clone(), b.clone())
     }
 }
@@ -83,7 +83,7 @@ impl<T: MinIdentity + Clone> Monoid for Min<T> {
         T::id()
     }
 
-    fn composition(a: &Self::S, b: &Self::S) -> Self::S {
+    fn operate(a: &Self::S, b: &Self::S) -> Self::S {
         min(a.clone(), b.clone())
     }
 }
@@ -101,7 +101,7 @@ impl<T: Monoid> From<&[T::S]> for Segtree<T> {
             st.node[i + base] = value[i].clone();
         }
         for i in (0..base).rev() {
-            st.node[i] = T::composition(&st.node[2 * i + 1], &st.node[2 * i + 2]);
+            st.node[i] = T::operate(&st.node[2 * i + 1], &st.node[2 * i + 2]);
         }
         st
     }
@@ -132,7 +132,7 @@ impl<T: Monoid> Segtree<T> {
         let mut i = p + base;
         while i > 0 {
             i = (i - 1) / 2;
-            self.node[i] = T::composition(&self.node[2 * i + 1], &self.node[2 * i + 2]);
+            self.node[i] = T::operate(&self.node[2 * i + 1], &self.node[2 * i + 2]);
         }
     }
 
@@ -162,7 +162,7 @@ impl<T: Monoid> Segtree<T> {
         } else {
             let lv = self.query_main(2 * p + 1, pl, (pl + pr) / 2, l, r);
             let rv = self.query_main(2 * p + 2, (pl + pr) / 2, pr, l, r);
-            T::composition(&lv, &rv)
+            T::operate(&lv, &rv)
         }
     }
 
