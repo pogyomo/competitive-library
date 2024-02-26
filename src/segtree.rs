@@ -164,45 +164,40 @@ impl<T: Monoid> Segtree<T> {
     }
 
     pub fn query<R: RangeBounds<usize>>(&self, range: R) -> T::S {
-        let l = match range.start_bound() {
+        let mut l = match range.start_bound() {
             Bound::Unbounded => 0,
             Bound::Included(&l) => l,
             Bound::Excluded(&l) => l + 1,
-        };
-        let r = match range.end_bound() {
+        } + self.leaf_base();
+        let mut r = match range.end_bound() {
             Bound::Unbounded => self.n,
             Bound::Included(&r) => r + 1, // convert ..=r to ..r+1
             Bound::Excluded(&r) => r,
-        };
-        self.query_main(0, 0, self.leaf_len(), l, r)
-    }
-
-    fn query_main(&self, p: usize, pl: usize, pr: usize, l: usize, r: usize) -> T::S {
-        if pr <= l || pl >= r {
-            T::identity()
-        } else if l <= pl && pr <= r {
-            self.node[p].clone()
-        } else {
-            let lv = self.query_main(2 * p + 1, pl, (pl + pr) / 2, l, r);
-            let rv = self.query_main(2 * p + 2, (pl + pr) / 2, pr, l, r);
-            T::operate(&lv, &rv)
+        } + self.leaf_base();
+        let mut res = T::identity();
+        while l < r {
+            if l % 2 == 0 {
+                res = T::operate(&self.node[l], &res);
+                l += 1;
+            }
+            if r % 2 == 0 {
+                r -= 1;
+                res = T::operate(&res, &self.node[r]);
+            }
+            l = (l - 1) / 2;
+            r = (r - 1) / 2;
         }
+        res
     }
 
     fn leaf_base(&self) -> usize {
         self.n.next_power_of_two() - 1
     }
-
-    fn leaf_len(&self) -> usize {
-        self.n.next_power_of_two()
-    }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::segtree::{Additive, Max, Min, Segtree};
-
-    use super::Multiplicative;
+    use super::{Additive, Max, Min, Multiplicative, Segtree};
 
     #[test]
     fn additive() {
