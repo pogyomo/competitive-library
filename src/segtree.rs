@@ -1,11 +1,16 @@
 use std::{
     cmp::{max, min},
     marker::PhantomData,
-    ops::{Add, Bound, RangeBounds},
+    ops::{Add, Bound, Mul, RangeBounds},
 };
 
 /// A helper trait for type which has identity of additive.
 trait AdditiveIdentity: Add<Self, Output = Self> + Sized {
+    fn id() -> Self;
+}
+
+/// A helper trait for type which has identity of multiplicative.
+trait MultiplicativeIdentity: Mul<Self, Output = Self> + Sized {
     fn id() -> Self;
 }
 
@@ -23,6 +28,10 @@ macro_rules! impl_int {
     ($($type:ident),* $(,)*) => {$(
         impl AdditiveIdentity for $type {
             fn id() -> Self { 0 }
+        }
+
+        impl MultiplicativeIdentity for $type {
+            fn id() -> Self { 1 }
         }
 
         impl MaxIdentity for $type {
@@ -57,6 +66,20 @@ impl<T: AdditiveIdentity + Clone> Monoid for Additive<T> {
 
     fn operate(a: &Self::S, b: &Self::S) -> Self::S {
         a.clone() + b.clone()
+    }
+}
+
+pub struct Multiplicative<T>(PhantomData<fn() -> T>);
+
+impl<T: MultiplicativeIdentity + Clone> Monoid for Multiplicative<T> {
+    type S = T;
+
+    fn identity() -> Self::S {
+        T::id()
+    }
+
+    fn operate(a: &Self::S, b: &Self::S) -> Self::S {
+        a.clone() * b.clone()
     }
 }
 
@@ -179,6 +202,8 @@ impl<T: Monoid> Segtree<T> {
 mod test {
     use crate::segtree::{Additive, Max, Min, Segtree};
 
+    use super::Multiplicative;
+
     #[test]
     fn additive() {
         let mut st = Segtree::<Additive<usize>>::from(vec![0, 1, 2, 3, 4, 5]);
@@ -187,6 +212,16 @@ mod test {
         st.set(0, 100);
         assert_eq!(st.query(..), 115);
         assert_eq!(st.query(1..), 15);
+    }
+
+    #[test]
+    fn multiplicative() {
+        let mut st = Segtree::<Multiplicative<usize>>::from(vec![0, 1, 2, 3, 4, 5]);
+        assert_eq!(st.query(..), 0);
+        assert_eq!(st.query(1..), 120);
+        st.set(0, 2);
+        assert_eq!(st.query(..), 240);
+        assert_eq!(st.query(1..), 120);
     }
 
     #[test]
