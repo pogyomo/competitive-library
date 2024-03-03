@@ -1,6 +1,7 @@
 use std::{collections::BTreeMap, ops::RangeBounds};
 
 pub struct Multiset<T> {
+    kinds: usize,
     size: usize,
     map: BTreeMap<T, usize>,
 }
@@ -8,6 +9,7 @@ pub struct Multiset<T> {
 impl<T> Multiset<T> {
     pub fn new() -> Self {
         Self {
+            kinds: 0,
             size: 0,
             map: BTreeMap::new(),
         }
@@ -17,16 +19,26 @@ impl<T> Multiset<T> {
 impl<T: Ord> Multiset<T> {
     pub fn insert(&mut self, value: T) {
         self.size += 1;
-        *self.map.entry(value).or_insert(0) += 1;
+        match self.map.get(&value) {
+            Some(count) => {
+                self.map.insert(value, count + 1);
+            }
+            None => {
+                self.kinds += 1;
+                self.map.insert(value, 1);
+            }
+        }
     }
 
     pub fn remove(&mut self, value: &T) {
         self.size = self.size.saturating_sub(1);
         match self.map.get_mut(value) {
             Some(count) if *count >= 2 => *count -= 1,
-            _ => {
+            Some(_) => {
+                self.kinds -= 1;
                 self.map.remove(value);
             }
+            _ => (),
         }
     }
 
@@ -40,6 +52,12 @@ impl<T: Ord> Multiset<T> {
 }
 
 impl<T> Multiset<T> {
+    /// Returns the number of different elements in the set.
+    pub fn kinds(&self) -> usize {
+        self.kinds
+    }
+
+    /// Returns the number of elements in the set.
     pub fn len(&self) -> usize {
         self.size
     }
@@ -189,5 +207,20 @@ mod test {
         assert_eq!(ms.range(..).collect::<Vec<_>>(), vec![&1]);
         ms.remove(&1);
         assert_eq!(ms.range(..).collect::<Vec<_>>(), Vec::<&usize>::new());
+    }
+
+    #[test]
+    fn test_kinds() {
+        let mut ms = Multiset::new();
+        ms.insert(1);
+        ms.insert(2);
+        ms.insert(3);
+        assert_eq!(ms.kinds(), 3);
+        ms.insert(3);
+        assert_eq!(ms.kinds(), 3);
+        ms.remove(&3);
+        assert_eq!(ms.kinds(), 3);
+        ms.remove(&3);
+        assert_eq!(ms.kinds(), 2);
     }
 }
