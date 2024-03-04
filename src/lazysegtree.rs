@@ -98,7 +98,8 @@ impl<T: MapMonoid> LazySegtree<T> {
                     self.propagate(p);
                     if pr <= l || r <= pl {
                         continue;
-                    } else if l <= pl && pr <= r {
+                    }
+                    if l <= pl && pr <= r {
                         self.lazy[p] = f.clone();
                         self.propagate(p);
                     } else {
@@ -135,7 +136,8 @@ impl<T: MapMonoid> LazySegtree<T> {
                     self.propagate(p);
                     if pr <= l || r <= pl {
                         continue;
-                    } else if l <= pl && pr <= r {
+                    }
+                    if l <= pl && pr <= r {
                         stack.push(StackState::Value(p));
                     } else {
                         let mid = (pl + pr) / 2;
