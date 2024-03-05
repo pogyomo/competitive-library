@@ -150,7 +150,6 @@ impl<T: MapMonoid> LazySegtree<T> {
                 }
             }
         }
-        println!();
         res
     }
 
