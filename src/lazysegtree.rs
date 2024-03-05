@@ -122,10 +122,6 @@ impl<T: MapMonoid> LazySegtree<T> {
             Value(usize),
         }
 
-        // TODO:
-        // I think this loop will accumulate node[p_1], node[p_2], .., node[p_n] into res in the
-        // order so that l = l_1, r_i = l_{i + 1} and r_n = r when the range of node[p_i] is [l_i, r_i).
-        // Is this correct?
         let (l, r) = range_normalize(range, 0, self.n);
         let mut res = T::S::identity();
         let mut stack = Vec::new();
@@ -282,5 +278,72 @@ mod test {
         );
         assert_eq!(st.query(..), 7);
         assert_eq!(st.query(2..4), 7);
+    }
+
+    #[test]
+    fn check_commutative_law_is_not_required() {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+        struct Mat2([[usize; 2]; 2]);
+
+        impl Mat2 {
+            fn identity() -> Self {
+                Mat2([[1, 0], [0, 1]])
+            }
+        }
+
+        impl std::ops::Mul for Mat2 {
+            type Output = Self;
+            fn mul(self, rhs: Self) -> Self::Output {
+                let mut mat = [[0; 2]; 2];
+                for i in 0..2 {
+                    for j in 0..2 {
+                        for k in 0..2 {
+                            mat[i][j] += self.0[i][k] * rhs.0[k][j];
+                        }
+                    }
+                }
+                Self(mat)
+            }
+        }
+
+        struct Mat2Monoid;
+
+        impl Monoid for Mat2Monoid {
+            type S = Mat2;
+            fn identity() -> Self::S {
+                Mat2::identity()
+            }
+            fn operate(a: &Self::S, b: &Self::S) -> Self::S {
+                *a * *b
+            }
+        }
+
+        struct EmptyMat2MapMonoid;
+
+        impl MapMonoid for EmptyMat2MapMonoid {
+            type S = Mat2Monoid;
+            type F = ();
+            fn apply(_: &Self::F, x: &<Self::S as Monoid>::S) -> <Self::S as Monoid>::S {
+                *x
+            }
+            fn map_identity() -> Self::F {
+                ()
+            }
+            fn composition(_: &Self::F, _: &Self::F) -> Self::F {
+                ()
+            }
+        }
+
+        let m1 = Mat2([[1, 2], [3, 4]]);
+        let m2 = Mat2([[4, 3], [2, 1]]);
+        let m3 = Mat2([[0, 5], [8, 2]]);
+        let mut st = LazySegtree::<EmptyMat2MapMonoid>::new(3);
+        assert_eq!(st.query(..), Mat2::identity());
+        st.set(0, m1);
+        st.set(1, m2);
+        st.set(2, m3);
+        assert_eq!(st.query(..), m1 * m2 * m3);
+        assert_eq!(st.query(0..2), m1 * m2);
+        assert_eq!(st.query(1..3), m2 * m3);
     }
 }
