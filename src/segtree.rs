@@ -164,28 +164,43 @@ impl<T: Monoid> Segtree<T> {
     }
 
     pub fn query<R: RangeBounds<usize>>(&self, range: R) -> T::S {
-        let mut l = match range.start_bound() {
+        enum StackState {
+            Query(usize, usize, usize),
+            Value(usize),
+        }
+
+        let l = match range.start_bound() {
             Bound::Unbounded => 0,
             Bound::Included(&l) => l,
             Bound::Excluded(&l) => l + 1,
-        } + self.leaf_base();
-        let mut r = match range.end_bound() {
+        };
+        let r = match range.end_bound() {
             Bound::Unbounded => self.n,
             Bound::Included(&r) => r + 1, // convert ..=r to ..r+1
             Bound::Excluded(&r) => r,
-        } + self.leaf_base();
+        };
+
         let mut res = T::identity();
-        while l < r {
-            if l % 2 == 0 {
-                res = T::operate(&self.node[l], &res);
-                l += 1;
+        let mut stack = Vec::new();
+        stack.push(StackState::Query(0, 0, self.leaf_len()));
+        while let Some(state) = stack.pop() {
+            match state {
+                StackState::Query(p, pl, pr) => {
+                    if pr <= l || r <= pl {
+                        continue;
+                    }
+                    if l <= pl && pr <= r {
+                        stack.push(StackState::Value(p));
+                    } else {
+                        let mid = (pl + pr) / 2;
+                        stack.push(StackState::Query(p * 2 + 2, mid, pr));
+                        stack.push(StackState::Query(p * 2 + 1, pl, mid));
+                    }
+                }
+                StackState::Value(p) => {
+                    res = T::operate(&res, &self.node[p]);
+                }
             }
-            if r % 2 == 0 {
-                r -= 1;
-                res = T::operate(&res, &self.node[r]);
-            }
-            l = (l - 1) / 2;
-            r = (r - 1) / 2;
         }
         res
     }
@@ -193,11 +208,15 @@ impl<T: Monoid> Segtree<T> {
     fn leaf_base(&self) -> usize {
         self.n.next_power_of_two() - 1
     }
+
+    fn leaf_len(&self) -> usize {
+        self.n.next_power_of_two()
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use super::{Additive, Max, Min, Multiplicative, Segtree};
+    use super::{Additive, Max, Min, Monoid, Multiplicative, Segtree};
 
     #[test]
     fn additive() {
@@ -237,5 +256,56 @@ mod test {
         st.set(0, 100);
         assert_eq!(st.query(..), 1);
         assert_eq!(st.query(2..), 2);
+    }
+
+    #[test]
+    fn check_commutative_law_is_not_required() {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+        struct Mat2([[usize; 2]; 2]);
+
+        impl Mat2 {
+            fn identity() -> Self {
+                Mat2([[1, 0], [0, 1]])
+            }
+        }
+
+        impl std::ops::Mul for Mat2 {
+            type Output = Self;
+            fn mul(self, rhs: Self) -> Self::Output {
+                let mut mat = [[0; 2]; 2];
+                for i in 0..2 {
+                    for j in 0..2 {
+                        for k in 0..2 {
+                            mat[i][j] += self.0[i][k] * rhs.0[k][j];
+                        }
+                    }
+                }
+                Self(mat)
+            }
+        }
+
+        struct Mat2Monoid;
+
+        impl Monoid for Mat2Monoid {
+            type S = Mat2;
+            fn identity() -> Self::S {
+                Mat2::identity()
+            }
+            fn operate(a: &Self::S, b: &Self::S) -> Self::S {
+                *a * *b
+            }
+        }
+
+        let m1 = Mat2([[1, 2], [3, 4]]);
+        let m2 = Mat2([[4, 3], [2, 1]]);
+        let m3 = Mat2([[0, 5], [8, 2]]);
+        let mut st = Segtree::<Mat2Monoid>::new(3);
+        assert_eq!(st.query(..), Mat2::identity());
+        st.set(0, m1);
+        st.set(1, m2);
+        st.set(2, m3);
+        assert_eq!(st.query(..), m1 * m2 * m3);
+        assert_eq!(st.query(0..2), m1 * m2);
+        assert_eq!(st.query(1..3), m2 * m3);
     }
 }
