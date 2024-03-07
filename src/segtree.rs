@@ -164,53 +164,35 @@ impl<T: Monoid> Segtree<T> {
     }
 
     pub fn query<R: RangeBounds<usize>>(&self, range: R) -> T::S {
-        enum StackState {
-            Query(usize, usize, usize),
-            Value(usize),
-        }
-
-        let l = match range.start_bound() {
+        let mut l = match range.start_bound() {
             Bound::Unbounded => 0,
             Bound::Included(&l) => l,
             Bound::Excluded(&l) => l + 1,
-        };
-        let r = match range.end_bound() {
+        } + self.leaf_base();
+        let mut r = match range.end_bound() {
             Bound::Unbounded => self.n,
             Bound::Included(&r) => r + 1, // convert ..=r to ..r+1
             Bound::Excluded(&r) => r,
-        };
-
-        let mut res = T::identity();
-        let mut stack = Vec::new();
-        stack.push(StackState::Query(0, 0, self.leaf_len()));
-        while let Some(state) = stack.pop() {
-            match state {
-                StackState::Query(p, pl, pr) => {
-                    if pr <= l || r <= pl {
-                        continue;
-                    }
-                    if l <= pl && pr <= r {
-                        stack.push(StackState::Value(p));
-                    } else {
-                        let mid = (pl + pr) / 2;
-                        stack.push(StackState::Query(p * 2 + 2, mid, pr));
-                        stack.push(StackState::Query(p * 2 + 1, pl, mid));
-                    }
-                }
-                StackState::Value(p) => {
-                    res = T::operate(&res, &self.node[p]);
-                }
+        } + self.leaf_base();
+        let mut lv = T::identity();
+        let mut rv = T::identity();
+        while l < r {
+            if l % 2 == 0 {
+                lv = T::operate(&lv, &self.node[l]);
+                l += 1;
             }
+            if r % 2 == 0 {
+                r -= 1;
+                rv = T::operate(&self.node[r], &rv);
+            }
+            l = (l - 1) / 2;
+            r = (r - 1) / 2;
         }
-        res
+        T::operate(&lv, &rv)
     }
 
     fn leaf_base(&self) -> usize {
         self.n.next_power_of_two() - 1
-    }
-
-    fn leaf_len(&self) -> usize {
-        self.n.next_power_of_two()
     }
 }
 
