@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-/// Perform coordinate compression
+/// Perform coordinate compression. Time complexity is O(NlogN).
 pub fn compress<T: Ord + Clone>(v: Vec<T>) -> Vec<usize> {
     let mut w = v.clone();
     w.sort();
@@ -14,7 +14,7 @@ pub fn compress<T: Ord + Clone>(v: Vec<T>) -> Vec<usize> {
         .collect()
 }
 
-/// Compress given data with run-length encoding
+/// Compress given data with run-length encoding. Time complexity is O(N).
 pub fn rle<T: Eq>(v: Vec<T>) -> Vec<(T, usize)> {
     let mut iter = v.into_iter();
     let mut res = Vec::new();
