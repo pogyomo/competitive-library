@@ -1,6 +1,7 @@
 use std::{
     cmp::{max, min},
     marker::PhantomData,
+    mem::replace,
     ops::{Add, Bound, Mul, RangeBounds},
 };
 
@@ -116,12 +117,12 @@ pub struct Segtree<T: Monoid> {
     n: usize,
 }
 
-impl<T: Monoid> From<&[T::S]> for Segtree<T> {
-    fn from(value: &[T::S]) -> Self {
+impl<T: Monoid> From<Vec<T::S>> for Segtree<T> {
+    fn from(mut value: Vec<T::S>) -> Self {
         let mut st = Self::new(value.len());
         let base = st.leaf_base();
         for i in 0..value.len() {
-            st.node[i + base] = value[i].clone();
+            st.node[i + base] = replace(&mut value[i], T::identity());
         }
         for i in (0..base).rev() {
             st.node[i] = T::operate(&st.node[2 * i + 1], &st.node[2 * i + 2]);
@@ -130,15 +131,15 @@ impl<T: Monoid> From<&[T::S]> for Segtree<T> {
     }
 }
 
-impl<T: Monoid> From<&Vec<T::S>> for Segtree<T> {
-    fn from(value: &Vec<T::S>) -> Self {
-        Self::from(value.as_slice())
+impl<T: Monoid> From<&[T::S]> for Segtree<T> {
+    fn from(value: &[T::S]) -> Self {
+        Self::from(value.to_vec())
     }
 }
 
-impl<T: Monoid> From<Vec<T::S>> for Segtree<T> {
-    fn from(value: Vec<T::S>) -> Self {
-        Self::from(value.as_slice())
+impl<T: Monoid> From<&Vec<T::S>> for Segtree<T> {
+    fn from(value: &Vec<T::S>) -> Self {
+        Self::from(value.clone())
     }
 }
 

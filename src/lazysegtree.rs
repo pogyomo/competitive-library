@@ -1,5 +1,8 @@
 pub use super::segtree::{Additive, Max, Min, Monoid, Multiplicative};
-use std::ops::{Bound, RangeBounds};
+use std::{
+    mem::replace,
+    ops::{Bound, RangeBounds},
+};
 
 /// Convert given range into [l, r).
 fn range_normalize<R: RangeBounds<usize>>(range: R, min: usize, max: usize) -> (usize, usize) {
@@ -32,12 +35,12 @@ pub struct LazySegtree<T: MapMonoid> {
     n: usize,
 }
 
-impl<T: MapMonoid> From<&[<T::S as Monoid>::S]> for LazySegtree<T> {
-    fn from(value: &[<T::S as Monoid>::S]) -> Self {
+impl<T: MapMonoid> From<Vec<<T::S as Monoid>::S>> for LazySegtree<T> {
+    fn from(mut value: Vec<<T::S as Monoid>::S>) -> Self {
         let mut st = Self::new(value.len());
         let base = st.leaf_base();
         for i in 0..value.len() {
-            st.node[i + base] = value[i].clone();
+            st.node[i + base] = replace(&mut value[i], <T::S as Monoid>::identity());
         }
         for i in (0..base).rev() {
             st.node[i] = T::S::operate(&st.node[2 * i + 1], &st.node[2 * i + 2]);
@@ -46,15 +49,15 @@ impl<T: MapMonoid> From<&[<T::S as Monoid>::S]> for LazySegtree<T> {
     }
 }
 
-impl<T: MapMonoid> From<&Vec<<T::S as Monoid>::S>> for LazySegtree<T> {
-    fn from(value: &Vec<<T::S as Monoid>::S>) -> Self {
-        Self::from(value.as_slice())
+impl<T: MapMonoid> From<&[<T::S as Monoid>::S]> for LazySegtree<T> {
+    fn from(value: &[<T::S as Monoid>::S]) -> Self {
+        Self::from(value.to_vec())
     }
 }
 
-impl<T: MapMonoid> From<Vec<<T::S as Monoid>::S>> for LazySegtree<T> {
-    fn from(value: Vec<<T::S as Monoid>::S>) -> Self {
-        Self::from(value.as_slice())
+impl<T: MapMonoid> From<&Vec<<T::S as Monoid>::S>> for LazySegtree<T> {
+    fn from(value: &Vec<<T::S as Monoid>::S>) -> Self {
+        Self::from(value.clone())
     }
 }
 
