@@ -1,4 +1,7 @@
-use std::{collections::BTreeMap, ops::RangeBounds};
+use std::{
+    collections::{btree_map::Range as BTreeMapRange, BTreeMap},
+    ops::RangeBounds,
+};
 
 pub struct Multiset<T> {
     kinds: usize,
@@ -65,11 +68,11 @@ pub struct Range<'a, T> {
     front: Option<&'a T>,
     back_count: usize,
     back: Option<&'a T>,
-    iter: std::collections::btree_map::Range<'a, T, usize>,
+    iter: BTreeMapRange<'a, T, usize>,
 }
 
 impl<'a, T> Range<'a, T> {
-    pub fn new(iter: std::collections::btree_map::Range<'a, T, usize>) -> Self {
+    pub fn new(iter: BTreeMapRange<'a, T, usize>) -> Self {
         Self {
             front_count: 0,
             front: None,
