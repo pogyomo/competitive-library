@@ -15,8 +15,8 @@ pub fn compress<T: Ord + Clone>(v: Vec<T>) -> Vec<usize> {
 }
 
 /// Compress given data with run-length encoding. Time complexity is O(N).
-pub fn rle<T: Eq>(v: Vec<T>) -> Vec<(T, usize)> {
-    let mut iter = v.into_iter();
+pub fn rle<T: Eq, I: IntoIterator<Item = T>>(iter: I) -> Vec<(T, usize)> {
+    let mut iter = iter.into_iter();
     let mut res = Vec::new();
     let mut prev = if let Some(first) = iter.next() {
         first
@@ -50,6 +50,6 @@ mod test {
     fn test_rle() {
         let v = vec![2, 100, 4, 4, 3, 2, 2, 2];
         assert_eq!(rle(v), vec![(2, 1), (100, 1), (4, 2), (3, 1), (2, 3)]);
-        assert_eq!(rle::<usize>(vec![]), vec![]);
+        assert_eq!(rle(Vec::<usize>::new()), vec![]);
     }
 }
