@@ -7,40 +7,40 @@ use std::{
 
 /// A helper trait for type which has identity of additive.
 trait AdditiveIdentity: Add<Self, Output = Self> + Sized {
-    fn id() -> Self;
+    fn identity() -> Self;
 }
 
 /// A helper trait for type which has identity of multiplicative.
 trait MultiplicativeIdentity: Mul<Self, Output = Self> + Sized {
-    fn id() -> Self;
+    fn identity() -> Self;
 }
 
 /// A helper trait for type which has identity of max.
 trait MaxIdentity: Ord {
-    fn id() -> Self;
+    fn identity() -> Self;
 }
 
 /// A helper trait for type which has identity of min.
 trait MinIdentity: Ord {
-    fn id() -> Self;
+    fn identity() -> Self;
 }
 
 macro_rules! impl_int {
     ($($type:ident),* $(,)*) => {$(
         impl AdditiveIdentity for $type {
-            fn id() -> Self { 0 }
+            fn identity() -> Self { 0 }
         }
 
         impl MultiplicativeIdentity for $type {
-            fn id() -> Self { 1 }
+            fn identity() -> Self { 1 }
         }
 
         impl MaxIdentity for $type {
-            fn id() -> Self { $type::MIN }
+            fn identity() -> Self { $type::MIN }
         }
 
         impl MinIdentity for $type {
-            fn id() -> Self { $type::MAX }
+            fn identity() -> Self { $type::MAX }
         }
     )*};
 }
@@ -62,7 +62,7 @@ impl<T: AdditiveIdentity + Clone> Monoid for Additive<T> {
     type S = T;
 
     fn identity() -> Self::S {
-        T::id()
+        T::identity()
     }
 
     fn operate(a: &Self::S, b: &Self::S) -> Self::S {
@@ -76,7 +76,7 @@ impl<T: MultiplicativeIdentity + Clone> Monoid for Multiplicative<T> {
     type S = T;
 
     fn identity() -> Self::S {
-        T::id()
+        T::identity()
     }
 
     fn operate(a: &Self::S, b: &Self::S) -> Self::S {
@@ -90,7 +90,7 @@ impl<T: MaxIdentity + Clone> Monoid for Max<T> {
     type S = T;
 
     fn identity() -> Self::S {
-        T::id()
+        T::identity()
     }
 
     fn operate(a: &Self::S, b: &Self::S) -> Self::S {
@@ -104,7 +104,7 @@ impl<T: MinIdentity + Clone> Monoid for Min<T> {
     type S = T;
 
     fn identity() -> Self::S {
-        T::id()
+        T::identity()
     }
 
     fn operate(a: &Self::S, b: &Self::S) -> Self::S {
