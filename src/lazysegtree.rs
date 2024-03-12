@@ -1,6 +1,6 @@
 pub use super::segtree::{Additive, Max, Min, Monoid, Multiplicative};
 use std::{
-    mem::{replace, zeroed},
+    mem::replace,
     ops::{Bound, RangeBounds},
 };
 
@@ -40,8 +40,7 @@ impl<T: MapMonoid> From<Vec<<T::S as Monoid>::S>> for LazySegtree<T> {
         let mut st = Self::new(value.len());
         let base = st.leaf_base();
         for i in 0..value.len() {
-            // SAFETY: value[i] is not accessed anymore
-            st.node[i + base] = replace(&mut value[i], unsafe { zeroed() });
+            st.node[i + base] = replace(&mut value[i], <T::S as Monoid>::identity());
         }
         for i in (0..base).rev() {
             st.node[i] = T::S::operate(&st.node[2 * i + 1], &st.node[2 * i + 2]);
