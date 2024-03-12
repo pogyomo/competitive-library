@@ -18,10 +18,9 @@ pub fn compress<T: Ord + Clone>(v: Vec<T>) -> Vec<usize> {
 pub fn rle<T: Eq, I: IntoIterator<Item = T>>(iter: I) -> Vec<(T, usize)> {
     let mut iter = iter.into_iter();
     let mut res = Vec::new();
-    let mut prev = if let Some(first) = iter.next() {
-        first
-    } else {
-        return res;
+    let mut prev = match iter.next() {
+        Some(first) => first,
+        None => return res,
     };
     let mut count = 1;
     for v in iter {

@@ -19,14 +19,11 @@ impl<T> Multiset<T> {
 impl<T: Ord> Multiset<T> {
     pub fn insert(&mut self, value: T) {
         self.size += 1;
-        match self.map.get(&value) {
-            Some(count) => {
-                self.map.insert(value, count + 1);
-            }
-            None => {
-                self.kinds += 1;
-                self.map.insert(value, 1);
-            }
+        if let Some(count) = self.map.get(&value) {
+            self.map.insert(value, count + 1);
+        } else {
+            self.kinds += 1;
+            self.map.insert(value, 1);
         }
     }
 
