@@ -26,7 +26,7 @@ trait MinIdentity: Ord {
 }
 
 macro_rules! impl_int {
-    ($($type:ident),* $(,)*) => {$(
+    ($($type:ident),*) => {$(
         impl AdditiveIdentity for $type {
             fn identity() -> Self { 0 }
         }
@@ -45,9 +45,25 @@ macro_rules! impl_int {
     )*};
 }
 
+macro_rules! impl_float {
+    ($($type:ident),*) => {$(
+        impl AdditiveIdentity for $type {
+            fn identity() -> Self { 0.0 }
+        }
+
+        impl MultiplicativeIdentity for $type {
+            fn identity() -> Self { 1.0 }
+        }
+    )*};
+}
+
 impl_int! {
     u8, u16, u32, u64, u128, usize,
-    i8, i16, i32, i64, i128, isize,
+    i8, i16, i32, i64, i128, isize
+}
+
+impl_float! {
+    f32, f64
 }
 
 pub trait Monoid {
