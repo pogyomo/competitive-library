@@ -116,7 +116,7 @@ impl<T: MaxIdentity + Clone> CommutativeMonoid for Max<T> {
     }
 
     fn operate(a: &Self::S, b: &Self::S) -> Self::S {
-        max(a.clone(), b.clone())
+        max(a, b).clone()
     }
 }
 
@@ -130,7 +130,7 @@ impl<T: MinIdentity + Clone> CommutativeMonoid for Min<T> {
     }
 
     fn operate(a: &Self::S, b: &Self::S) -> Self::S {
-        min(a.clone(), b.clone())
+        min(a, b).clone()
     }
 }
 
