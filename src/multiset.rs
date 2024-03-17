@@ -1,12 +1,20 @@
 use std::{
     collections::{btree_map::Range as BTreeMapRange, BTreeMap},
+    fmt::Debug,
     ops::RangeBounds,
 };
 
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Multiset<T> {
     kinds: usize,
     size: usize,
     map: BTreeMap<T, usize>,
+}
+
+impl<T: Debug + Ord> Debug for Multiset<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_set().entries(self.range(..)).finish()
+    }
 }
 
 impl<T> Multiset<T> {
@@ -69,6 +77,25 @@ pub struct Range<'a, T> {
     back_count: usize,
     back: Option<&'a T>,
     iter: BTreeMapRange<'a, T, usize>,
+}
+
+// Clone can be implemented to Range even if T doesn't implement Clone.
+impl<T> Clone for Range<'_, T> {
+    fn clone(&self) -> Self {
+        Range {
+            front_count: self.front_count,
+            front: self.front,
+            back_count: self.back_count,
+            back: self.back,
+            iter: self.iter.clone(),
+        }
+    }
+}
+
+impl<T: Debug> Debug for Range<'_, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_set().entries(self.clone()).finish()
+    }
 }
 
 impl<'a, T> Range<'a, T> {
