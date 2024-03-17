@@ -1,21 +1,38 @@
 use std::{
     cmp::{max_by, min_by, Ordering},
     collections::BTreeMap,
+    fmt::Debug,
     ops::Add,
 };
 
-/// Perform coordinate compression. Time complexity is O(NlogN).
-pub fn compress<T: Ord + Clone>(v: Vec<T>) -> Vec<usize> {
-    let mut w = v.clone();
-    w.sort();
-    w.dedup();
-    let mut value_to_priority = BTreeMap::new();
-    for (w, i) in w.into_iter().zip(0..) {
-        value_to_priority.insert(w, i);
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Compress<T> {
+    map: BTreeMap<T, usize>,
+}
+
+impl<T: Debug> Debug for Compress<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_map().entries(self.map.iter()).finish()
     }
-    v.into_iter()
-        .map(|value| value_to_priority.get(&value).copied().unwrap())
-        .collect()
+}
+
+impl<T: Ord> Compress<T> {
+    /// Returns compressed given value if exist. Time complexity is O(logN).
+    pub fn get(&self, value: &T) -> Option<usize> {
+        self.map.get(value).copied()
+    }
+}
+
+/// Perform coordinate compression. Time complexity is O(NlogN).
+pub fn compress<T: Ord + Clone, I: IntoIterator<Item = T>>(iter: I) -> Compress<T> {
+    let mut v = iter.into_iter().collect::<Vec<_>>();
+    v.sort();
+    v.dedup();
+    let mut map = BTreeMap::new();
+    for (v, i) in v.into_iter().zip(0..) {
+        map.insert(v, i);
+    }
+    Compress { map }
 }
 
 /// Compress given data with run-length encoding. Time complexity is O(N).
@@ -130,7 +147,13 @@ mod test {
     #[test]
     fn test_compress() {
         let v = vec![2, 100, 5, 3, 201, 4, 100];
-        assert_eq!(compress(v), vec![0, 4, 3, 1, 5, 2, 4]);
+        let c = compress(v.clone());
+        assert_eq!(
+            v.into_iter()
+                .map(|v| c.get(&v).unwrap())
+                .collect::<Vec<_>>(),
+            vec![0, 4, 3, 1, 5, 2, 4]
+        );
     }
 
     #[test]
