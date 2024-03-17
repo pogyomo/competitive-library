@@ -17,6 +17,16 @@ impl<T: Debug + Ord> Debug for Multiset<T> {
     }
 }
 
+impl<T: Ord> FromIterator<T> for Multiset<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        let mut res = Self::new();
+        for value in iter {
+            res.insert(value);
+        }
+        res
+    }
+}
+
 impl<T> Multiset<T> {
     pub fn new() -> Self {
         Self {
