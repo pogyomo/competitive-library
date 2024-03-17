@@ -58,6 +58,19 @@ where
     Some(res)
 }
 
+/// Calculate maximum sum of subsequence of given iterator with respect to the specified
+/// key extraction function.
+/// Time complexity is O(N).
+pub fn max_subsequence_by_key<T, I, F, K>(iter: I, mut f: F) -> Option<T>
+where
+    T: Ord + Clone + Add<T, Output = T>,
+    I: IntoIterator<Item = T>,
+    F: FnMut(&T) -> K,
+    K: Ord,
+{
+    max_subsequence_by(iter, |a, b| f(a).cmp(&f(b)))
+}
+
 /// Calculate maximum sum of subsequence of given iterator.
 /// Time complexity is O(N).
 pub fn max_subsequence<T, I>(iter: I) -> Option<T>
@@ -85,6 +98,19 @@ where
         res = min_by(res, dp.clone(), &mut compare);
     }
     Some(res)
+}
+
+/// Calculate minimum sum of subsequence of given iterator with respect to the specified
+/// key extraction function.
+/// Time complexity is O(N).
+pub fn min_subsequence_by_key<T, I, F, K>(iter: I, mut f: F) -> Option<T>
+where
+    T: Ord + Clone + Add<T, Output = T>,
+    I: IntoIterator<Item = T>,
+    F: FnMut(&T) -> K,
+    K: Ord,
+{
+    min_subsequence_by(iter, |a, b| f(a).cmp(&f(b)))
 }
 
 /// Calculate minimum sum of subsequence of given iterator.
