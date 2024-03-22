@@ -171,8 +171,8 @@ impl<T: Monoid> Segtree<T> {
         self.node[p + base] = value;
         let mut i = p + base;
         while i > 0 {
-            i = (i - 1) / 2;
-            self.node[i] = T::operate(&self.node[2 * i + 1], &self.node[2 * i + 2]);
+            i = (i - 1) >> 1;
+            self.node[i] = T::operate(&self.node[(i << 1) + 1], &self.node[(i << 1) + 2]);
         }
     }
 
@@ -194,16 +194,16 @@ impl<T: Monoid> Segtree<T> {
         let mut lv = T::identity();
         let mut rv = T::identity();
         while l < r {
-            if l % 2 == 0 {
+            if l & 1 == 0 {
                 lv = T::operate(&lv, &self.node[l]);
                 l += 1;
             }
-            if r % 2 == 0 {
+            if r & 1 == 0 {
                 r -= 1;
                 rv = T::operate(&self.node[r], &rv);
             }
-            l = (l - 1) / 2;
-            r = (r - 1) / 2;
+            l = (l - 1) >> 1;
+            r = (r - 1) >> 1;
         }
         T::operate(&lv, &rv)
     }

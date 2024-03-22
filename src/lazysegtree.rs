@@ -43,7 +43,7 @@ impl<T: MapMonoid> From<Vec<<T::S as Monoid>::S>> for LazySegtree<T> {
             st.node[i + base] = replace(&mut value[i], <T::S as Monoid>::identity());
         }
         for i in (0..base).rev() {
-            st.node[i] = T::S::operate(&st.node[2 * i + 1], &st.node[2 * i + 2]);
+            st.node[i] = T::S::operate(&st.node[(i << 1) + 1], &st.node[(i << 1) + 2]);
         }
         st
     }
@@ -63,7 +63,7 @@ impl<T: MapMonoid> From<&Vec<<T::S as Monoid>::S>> for LazySegtree<T> {
 
 impl<T: MapMonoid> LazySegtree<T> {
     pub fn new(n: usize) -> Self {
-        let len = 2 * n.next_power_of_two() - 1;
+        let len = (n.next_power_of_two() << 1) - 1;
         let node = vec![T::S::identity(); len];
         let lazy = vec![T::map_identity(); len];
         Self { node, lazy, n }
@@ -81,8 +81,8 @@ impl<T: MapMonoid> LazySegtree<T> {
         self.propagate_recursive(p);
         self.node[p] = value;
         while p > 0 {
-            p = (p - 1) / 2;
-            self.node[p] = T::S::operate(&self.node[2 * p + 1], &self.node[2 * p + 2]);
+            p = (p - 1) >> 1;
+            self.node[p] = T::S::operate(&self.node[(p << 1) + 1], &self.node[(p << 1) + 2]);
         }
     }
 
@@ -106,14 +106,15 @@ impl<T: MapMonoid> LazySegtree<T> {
                         self.lazy[p] = f.clone();
                         self.propagate(p);
                     } else {
-                        let mid = (pl + pr) / 2;
+                        let mid = (pl + pr) >> 1;
                         stack.push(StackState::Merge(p));
-                        stack.push(StackState::Update(p * 2 + 2, mid, pr));
-                        stack.push(StackState::Update(p * 2 + 1, pl, mid));
+                        stack.push(StackState::Update((p << 1) + 2, mid, pr));
+                        stack.push(StackState::Update((p << 1) + 1, pl, mid));
                     }
                 }
                 StackState::Merge(p) => {
-                    self.node[p] = T::S::operate(&self.node[p * 2 + 1], &self.node[p * 2 + 2]);
+                    self.node[p] =
+                        T::S::operate(&self.node[(p << 1) + 1], &self.node[(p << 1) + 2]);
                 }
             }
         }
@@ -139,9 +140,9 @@ impl<T: MapMonoid> LazySegtree<T> {
                     if l <= pl && pr <= r {
                         stack.push(StackState::Value(p));
                     } else {
-                        let mid = (pl + pr) / 2;
-                        stack.push(StackState::Query(p * 2 + 2, mid, pr));
-                        stack.push(StackState::Query(p * 2 + 1, pl, mid));
+                        let mid = (pl + pr) >> 1;
+                        stack.push(StackState::Query((p << 1) + 2, mid, pr));
+                        stack.push(StackState::Query((p << 1) + 1, pl, mid));
                     }
                 }
                 StackState::Value(p) => {
@@ -158,8 +159,8 @@ impl<T: MapMonoid> LazySegtree<T> {
             return;
         }
         if p < self.leaf_base() {
-            self.lazy[p * 2 + 1] = T::composition(&self.lazy[p], &self.lazy[p * 2 + 1]);
-            self.lazy[p * 2 + 2] = T::composition(&self.lazy[p], &self.lazy[p * 2 + 2]);
+            self.lazy[(p << 1) + 1] = T::composition(&self.lazy[p], &self.lazy[(p << 1) + 1]);
+            self.lazy[(p << 1) + 2] = T::composition(&self.lazy[p], &self.lazy[(p << 1) + 2]);
         }
         self.node[p] = T::apply(&self.lazy[p], &self.node[p]);
         self.lazy[p] = T::map_identity();
@@ -172,7 +173,7 @@ impl<T: MapMonoid> LazySegtree<T> {
         let mut visit = Vec::new();
         visit.push(p);
         while p > 0 {
-            p = (p - 1) / 2;
+            p = (p - 1) >> 1;
             visit.push(p);
         }
         for p in visit {
