@@ -24,7 +24,7 @@ impl<T: Ord> Compress<T> {
 }
 
 /// Perform coordinate compression. Time complexity is O(NlogN).
-pub fn compress<T: Ord + Clone, I: IntoIterator<Item = T>>(iter: I) -> Compress<T> {
+pub fn compress<T: Ord, I: IntoIterator<Item = T>>(iter: I) -> Compress<T> {
     let mut v = iter.into_iter().collect::<Vec<_>>();
     v.sort();
     v.dedup();
