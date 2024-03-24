@@ -146,12 +146,16 @@ impl<T: CommutativeMonoid> FromIterator<T::S> for FenwickTree<T> {
         let (lower, upper) = iter.size_hint();
         assert_eq!(upper, Some(lower));
 
-        // TODO: O(nlogn) => O(n)?
-        let mut res = Self::new(lower);
-        for (p, value) in iter.enumerate() {
-            res.update(p, value);
+        let n = lower;
+        let mut node = vec![T::identity()];
+        node.extend(iter);
+        for i in 1..=n {
+            let j = i + lsb(i);
+            if j <= n {
+                node[j] = T::operate(&node[j], &node[i]);
+            }
         }
-        res
+        Self { node, n }
     }
 }
 
