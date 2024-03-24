@@ -1,37 +1,37 @@
 use std::{
     cmp::{max_by, min_by, Ordering},
-    collections::BTreeMap,
     fmt::Debug,
     ops::Add,
 };
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Compress<T> {
-    map: BTreeMap<T, usize>,
+    map: Vec<T>,
 }
 
 impl<T: Debug> Debug for Compress<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_map().entries(self.map.iter()).finish()
+        f.debug_map().entries(self.map.iter().zip(0..)).finish()
     }
 }
 
 impl<T: Ord> Compress<T> {
     /// Returns compressed given value if exist. Time complexity is O(logN).
-    pub fn get(&self, value: &T) -> Option<usize> {
-        self.map.get(value).copied()
+    pub fn compress(&self, value: &T) -> Option<usize> {
+        self.map.binary_search(value).ok()
+    }
+
+    /// Returns decompressed given value if exist. Time complexity is O(1).
+    pub fn decompress(&self, value: usize) -> Option<&T> {
+        self.map.get(value)
     }
 }
 
 /// Perform coordinate compression. Time complexity is O(NlogN).
 pub fn compress<T: Ord, I: IntoIterator<Item = T>>(iter: I) -> Compress<T> {
-    let mut v = iter.into_iter().collect::<Vec<_>>();
-    v.sort();
-    v.dedup();
-    let mut map = BTreeMap::new();
-    for (v, i) in v.into_iter().zip(0..) {
-        map.insert(v, i);
-    }
+    let mut map = iter.into_iter().collect::<Vec<_>>();
+    map.sort();
+    map.dedup();
     Compress { map }
 }
 
@@ -149,10 +149,15 @@ mod test {
         let v = vec![2, 100, 5, 3, 201, 4, 100];
         let c = compress(v.clone());
         assert_eq!(
-            v.into_iter()
-                .map(|v| c.get(&v).unwrap())
-                .collect::<Vec<_>>(),
+            v.iter().map(|v| c.compress(v).unwrap()).collect::<Vec<_>>(),
             vec![0, 4, 3, 1, 5, 2, 4]
+        );
+        assert_eq!(
+            vec![0, 4, 3, 1, 5, 2, 4]
+                .into_iter()
+                .map(|v| c.decompress(v).copied().unwrap())
+                .collect::<Vec<_>>(),
+            v
         );
     }
 
