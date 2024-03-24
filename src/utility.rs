@@ -168,11 +168,8 @@ mod test {
         let v = vec![1, -1, 3, -2, 4, -5];
         let mut max = isize::MIN;
         for i in 0..v.len() {
-            for j in i..v.len() {
-                let mut sum = 0;
-                for k in i..=j {
-                    sum += v[k];
-                }
+            for j in i..=v.len() {
+                let sum = v[i..j].iter().sum();
                 max = max.max(sum);
             }
         }
@@ -185,11 +182,8 @@ mod test {
         let v = vec![1, -1, 3, -2, 4, -5];
         let mut min = isize::MAX;
         for i in 0..v.len() {
-            for j in i..v.len() {
-                let mut sum = 0;
-                for k in i..=j {
-                    sum += v[k];
-                }
+            for j in i..=v.len() {
+                let sum = v[i..j].iter().sum();
                 min = min.min(sum);
             }
         }
