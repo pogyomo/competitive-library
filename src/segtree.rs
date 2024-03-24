@@ -134,13 +134,35 @@ pub struct Segtree<T: Monoid> {
 
 impl<T: Monoid> FromIterator<T::S> for Segtree<T> {
     fn from_iter<I: IntoIterator<Item = T::S>>(iter: I) -> Self {
-        // TODO: any good way for iter which size is unknown?
+        enum EitherIter<T, I1: Iterator<Item = T>, I2: Iterator<Item = T>> {
+            Left(I1),
+            Right(I2),
+        }
+
+        impl<T, I1: Iterator<Item = T>, I2: Iterator<Item = T>> Iterator for EitherIter<T, I1, I2> {
+            type Item = T;
+            fn next(&mut self) -> Option<Self::Item> {
+                match self {
+                    Self::Left(iter) => iter.next(),
+                    Self::Right(iter) => iter.next(),
+                }
+            }
+        }
+
         let iter = iter.into_iter();
         let (lower, upper) = iter.size_hint();
-        assert_eq!(upper, Some(lower));
-
-        let n = lower;
-        let n2 = n.next_power_of_two();
+        let (n, n2, iter) = if upper == Some(lower) {
+            let n = lower;
+            let n2 = n.next_power_of_two();
+            let iter = EitherIter::Left(iter);
+            (n, n2, iter)
+        } else {
+            let v = iter.collect::<Vec<_>>();
+            let n = v.len();
+            let n2 = n.next_power_of_two();
+            let iter = EitherIter::Right(v.into_iter());
+            (n, n2, iter)
+        };
         let mut node = Vec::with_capacity(n2 + n2 - 1);
         node.resize(n2 - 1, T::identity());
         node.extend(iter);
@@ -309,5 +331,12 @@ mod test {
         assert_eq!(st.query(..), m1 * m2 * m3);
         assert_eq!(st.query(0..2), m1 * m2);
         assert_eq!(st.query(1..3), m2 * m3);
+    }
+
+    #[test]
+    fn test_from_iter_for_size_unknown_iterator() {
+        let iter = std::iter::successors(Some(0), |&v| if v < 5 { Some(v + 1) } else { None });
+        let ft = Segtree::<Additive<usize>>::from_iter(iter.clone());
+        assert_eq!(ft.len(), iter.count());
     }
 }

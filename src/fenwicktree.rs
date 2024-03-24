@@ -141,14 +141,9 @@ pub struct FenwickTree<T: CommutativeMonoid> {
 
 impl<T: CommutativeMonoid> FromIterator<T::S> for FenwickTree<T> {
     fn from_iter<I: IntoIterator<Item = T::S>>(iter: I) -> Self {
-        // TODO: any good way for iter which size is unknown?
-        let iter = iter.into_iter();
-        let (lower, upper) = iter.size_hint();
-        assert_eq!(upper, Some(lower));
-
-        let n = lower;
         let mut node = vec![T::identity()];
         node.extend(iter);
+        let n = node.len() - 1;
         for i in 1..=n {
             let j = i + lsb(i);
             if j <= n {
@@ -267,5 +262,12 @@ mod test {
                 a[0..p].iter().copied().min().unwrap_or(usize::MAX)
             );
         }
+    }
+
+    #[test]
+    fn test_from_iter_for_size_unknown_iterator() {
+        let iter = std::iter::successors(Some(0), |&v| if v < 5 { Some(v + 1) } else { None });
+        let ft = FenwickTree::<Additive<usize>>::from_iter(iter.clone());
+        assert_eq!(ft.len(), iter.count());
     }
 }
