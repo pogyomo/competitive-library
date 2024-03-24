@@ -297,76 +297,23 @@ mod test {
     }
 
     #[test]
-    fn max_and_additive_with_apply_and_query() {
-        let mut st = LazySegtree::<MapAdditive<Max<usize>>>::from(vec![0, 1, 2, 3, 4, 5]);
-        assert_eq!(st.query(..), 5);
-        assert_eq!(st.query(2..4), 3);
-        st.apply(2..4, 3);
-        assert_eq!(st.query(..), 6);
-        assert_eq!(st.query(2..4), 6);
-    }
-
-    #[test]
-    fn max_and_additive_with_apply_and_get() {
-        let mut st = LazySegtree::<MapAdditive<Max<usize>>>::from(vec![0, 1, 2, 3, 4, 5]);
-        assert_eq!(
-            (0..6).map(|i| *st.get(i)).collect::<Vec<_>>(),
-            vec![0, 1, 2, 3, 4, 5]
-        );
-        st.apply(2..4, 3);
-        assert_eq!(
-            (0..6).map(|i| *st.get(i)).collect::<Vec<_>>(),
-            vec![0, 1, 5, 6, 4, 5]
-        );
-    }
-
-    #[test]
-    fn max_and_additive_with_set_and_query() {
-        let mut st = LazySegtree::<MapAdditive<Max<usize>>>::from(vec![0, 1, 2, 3, 4, 5]);
-        assert_eq!(st.query(..), 5);
-        assert_eq!(st.query(2..4), 3);
-        st.set(2, 6);
-        assert_eq!(st.query(..), 6);
-        assert_eq!(st.query(2..4), 6);
-    }
-
-    #[test]
-    fn max_and_additive_with_set_and_get() {
-        let mut st = LazySegtree::<MapAdditive<Max<usize>>>::from(vec![0, 1, 2, 3, 4, 5]);
-        assert_eq!(
-            (0..6).map(|i| *st.get(i)).collect::<Vec<_>>(),
-            vec![0, 1, 2, 3, 4, 5]
-        );
-        st.set(2, 6);
-        assert_eq!(
-            (0..6).map(|i| *st.get(i)).collect::<Vec<_>>(),
-            vec![0, 1, 6, 3, 4, 5]
-        );
-    }
-
-    #[test]
-    fn max_and_additive_with_all_operation() {
-        let mut st = LazySegtree::<MapAdditive<Max<usize>>>::from(vec![0, 1, 2, 3, 4, 5]);
-        assert_eq!(
-            (0..6).map(|i| *st.get(i)).collect::<Vec<_>>(),
-            vec![0, 1, 2, 3, 4, 5]
-        );
-        assert_eq!(st.query(..), 5);
-        assert_eq!(st.query(2..4), 3);
-        st.apply(2..4, 3);
-        assert_eq!(
-            (0..6).map(|i| *st.get(i)).collect::<Vec<_>>(),
-            vec![0, 1, 5, 6, 4, 5]
-        );
-        assert_eq!(st.query(..), 6);
-        assert_eq!(st.query(2..4), 6);
-        st.set(2, 7);
-        assert_eq!(
-            (0..6).map(|i| *st.get(i)).collect::<Vec<_>>(),
-            vec![0, 1, 7, 6, 4, 5]
-        );
-        assert_eq!(st.query(..), 7);
-        assert_eq!(st.query(2..4), 7);
+    fn max_map_additive() {
+        let mut v = vec![0, 1, 2, 3, 4, 5];
+        let mut st = LazySegtree::<MapAdditive<Max<usize>>>::from(v.clone());
+        for i in 0..=v.len() {
+            for j in i..=v.len() {
+                assert_eq!(st.query(i..j), v[i..j].iter().copied().max().unwrap_or(0));
+            }
+        }
+        st.apply(1..3, 4);
+        for i in 1..3 {
+            v[i] += 4;
+        }
+        for i in 0..=v.len() {
+            for j in i..=v.len() {
+                assert_eq!(st.query(i..j), v[i..j].iter().copied().max().unwrap_or(0));
+            }
+        }
     }
 
     #[test]

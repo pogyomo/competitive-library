@@ -289,42 +289,80 @@ mod test {
 
     #[test]
     fn additive() {
-        let mut st = Segtree::<Additive<usize>>::from(vec![0, 1, 2, 3, 4, 5]);
-        assert_eq!(st.query(..), 15);
-        assert_eq!(st.query(1..), 15);
+        let mut v = vec![0, 1, 2, 3, 4, 5];
+        let mut st = Segtree::<Additive<usize>>::from(v.clone());
+        for i in 0..=v.len() {
+            for j in i..=v.len() {
+                assert_eq!(st.query(i..j), v[i..j].iter().sum());
+            }
+        }
         st.set(0, 100);
-        assert_eq!(st.query(..), 115);
-        assert_eq!(st.query(1..), 15);
+        v[0] = 100;
+        for i in 0..=v.len() {
+            for j in i..=v.len() {
+                assert_eq!(st.query(i..j), v[i..j].iter().sum());
+            }
+        }
     }
 
     #[test]
     fn multiplicative() {
-        let mut st = Segtree::<Multiplicative<usize>>::from(vec![0, 1, 2, 3, 4, 5]);
-        assert_eq!(st.query(..), 0);
-        assert_eq!(st.query(1..), 120);
-        st.set(0, 2);
-        assert_eq!(st.query(..), 240);
-        assert_eq!(st.query(1..), 120);
+        let mut v = vec![0, 1, 2, 3, 4, 5];
+        let mut st = Segtree::<Multiplicative<usize>>::from(v.clone());
+        for i in 0..=v.len() {
+            for j in i..=v.len() {
+                assert_eq!(st.query(i..j), v[i..j].iter().product());
+            }
+        }
+        st.set(0, 100);
+        v[0] = 100;
+        for i in 0..=v.len() {
+            for j in i..=v.len() {
+                assert_eq!(st.query(i..j), v[i..j].iter().product());
+            }
+        }
     }
 
     #[test]
     fn max() {
-        let mut st = Segtree::<Max<usize>>::from(vec![0, 1, 2, 3, 4, 5]);
-        assert_eq!(st.query(..), 5);
-        assert_eq!(st.query(..5), 4);
+        let mut v = vec![0, 1, 2, 3, 4, 5];
+        let mut st = Segtree::<Max<usize>>::from(v.clone());
+        for i in 0..=v.len() {
+            for j in i..=v.len() {
+                assert_eq!(st.query(i..j), v[i..j].iter().max().copied().unwrap_or(0));
+            }
+        }
         st.set(0, 100);
-        assert_eq!(st.query(..), 100);
-        assert_eq!(st.query(1..5), 4);
+        v[0] = 100;
+        for i in 0..=v.len() {
+            for j in i..=v.len() {
+                assert_eq!(st.query(i..j), v[i..j].iter().max().copied().unwrap_or(0));
+            }
+        }
     }
 
     #[test]
     fn min() {
-        let mut st = Segtree::<Min<usize>>::from(vec![0, 1, 2, 3, 4, 5]);
-        assert_eq!(st.query(..), 0);
-        assert_eq!(st.query(1..), 1);
+        let mut v = vec![0, 1, 2, 3, 4, 5];
+        let mut st = Segtree::<Min<usize>>::from(v.clone());
+        for i in 0..=v.len() {
+            for j in i..=v.len() {
+                assert_eq!(
+                    st.query(i..j),
+                    v[i..j].iter().min().copied().unwrap_or(usize::MAX)
+                );
+            }
+        }
         st.set(0, 100);
-        assert_eq!(st.query(..), 1);
-        assert_eq!(st.query(2..), 2);
+        v[0] = 100;
+        for i in 0..=v.len() {
+            for j in i..=v.len() {
+                assert_eq!(
+                    st.query(i..j),
+                    v[i..j].iter().min().copied().unwrap_or(usize::MAX)
+                );
+            }
+        }
     }
 
     #[test]
