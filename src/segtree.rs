@@ -134,16 +134,17 @@ pub struct Segtree<T: Monoid> {
 }
 
 impl<T: Monoid> From<Vec<T::S>> for Segtree<T> {
-    fn from(mut value: Vec<T::S>) -> Self {
-        let mut st = Self::new(value.len());
-        let base = st.leaf_base();
-        for i in 0..value.len() {
-            st.node[i + base] = replace(&mut value[i], T::identity());
+    fn from(value: Vec<T::S>) -> Self {
+        let n = value.len();
+        let n2 = n.next_power_of_two();
+        let mut node = Vec::with_capacity(n2 + n2 - 1);
+        node.resize(n2 - 1, T::identity());
+        node.extend(value);
+        node.resize(n2 + n2 - 1, T::identity());
+        for i in (0..n2 - 1).rev() {
+            node[i] = T::operate(&node[(i << 1) + 1], &node[(i << 1) + 2]);
         }
-        for i in (0..base).rev() {
-            st.node[i] = T::operate(&st.node[2 * i + 1], &st.node[2 * i + 2]);
-        }
-        st
+        Self { node, n }
     }
 }
 

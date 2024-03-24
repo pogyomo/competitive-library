@@ -36,16 +36,18 @@ pub struct LazySegtree<T: MapMonoid> {
 }
 
 impl<T: MapMonoid> From<Vec<<T::S as Monoid>::S>> for LazySegtree<T> {
-    fn from(mut value: Vec<<T::S as Monoid>::S>) -> Self {
-        let mut st = Self::new(value.len());
-        let base = st.leaf_base();
-        for i in 0..value.len() {
-            st.node[i + base] = replace(&mut value[i], <T::S as Monoid>::identity());
+    fn from(value: Vec<<T::S as Monoid>::S>) -> Self {
+        let n = value.len();
+        let n2 = n.next_power_of_two();
+        let lazy = vec![T::map_identity(); n2 + n2 - 1];
+        let mut node = Vec::with_capacity(n2 + n2 - 1);
+        node.resize(n2 - 1, T::S::identity());
+        node.extend(value);
+        node.resize(n2 + n2 - 1, T::S::identity());
+        for i in (0..n2 - 1).rev() {
+            node[i] = T::S::operate(&node[(i << 1) + 1], &node[(i << 1) + 2]);
         }
-        for i in (0..base).rev() {
-            st.node[i] = T::S::operate(&st.node[(i << 1) + 1], &st.node[(i << 1) + 2]);
-        }
-        st
+        Self { node, lazy, n }
     }
 }
 
