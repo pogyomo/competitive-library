@@ -67,6 +67,10 @@ impl<T: MapMonoid> LazySegtree<T> {
         Self { node, lazy, n }
     }
 
+    pub fn len(&self) -> usize {
+        self.n
+    }
+
     pub fn get(&mut self, p: usize) -> &<T::S as Monoid>::S {
         assert!(p < self.n);
         let p = p + self.leaf_base();

@@ -165,6 +165,10 @@ impl<T: Monoid> Segtree<T> {
         Self { node, n }
     }
 
+    pub fn len(&self) -> usize {
+        self.n
+    }
+
     pub fn set(&mut self, p: usize, value: T::S) {
         let base = self.leaf_base();
         self.node[p + base] = value;

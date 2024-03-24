@@ -173,6 +173,10 @@ impl<T: CommutativeMonoid> FenwickTree<T> {
         }
     }
 
+    pub fn len(&self) -> usize {
+        self.n
+    }
+
     /// a[p] = operate(a[p], value)
     pub fn update(&mut self, p: usize, value: T::S) {
         let p = p + 1; // 0-index to 1-index
