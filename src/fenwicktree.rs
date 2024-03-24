@@ -190,6 +190,24 @@ impl<T: CommutativeMonoid> FenwickTree<T> {
         }
         res
     }
+
+    /// Find max p which satisfy f(a[0], a[1], ..., a[p - 1]) or p = 0 if no such p exist.
+    /// f(T::identity()) == true must be held.
+    /// Time complexity is O(log^2N).
+    pub fn max_right<F: FnMut(T::S) -> bool>(&self, mut f: F) -> usize {
+        // TODO: O(log^2N) => O(logN)
+        let mut ok = 0;
+        let mut ng = self.n + 1;
+        while ng - ok > 1 {
+            let mid = (ok + ng) / 2;
+            if f(self.prefix(mid)) {
+                ok = mid;
+            } else {
+                ng = mid;
+            }
+        }
+        ok
+    }
 }
 
 #[cfg(test)]
@@ -269,5 +287,13 @@ mod test {
         let iter = std::iter::successors(Some(0), |&v| if v < 5 { Some(v + 1) } else { None });
         let ft = FenwickTree::<Additive<usize>>::from_iter(iter.clone());
         assert_eq!(ft.len(), iter.count());
+    }
+
+    #[test]
+    fn test_max_right() {
+        let ft = FenwickTree::<Additive<usize>>::from(vec![1, 2, 3, 4, 5]);
+        assert_eq!(ft.max_right(|v| v <= 6), 3);
+        assert_eq!(ft.max_right(|v| v <= 0), 0);
+        assert_eq!(ft.max_right(|v| v <= 100), 5);
     }
 }

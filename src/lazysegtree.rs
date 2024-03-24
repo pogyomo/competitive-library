@@ -177,6 +177,48 @@ impl<T: MapMonoid> LazySegtree<T> {
         res
     }
 
+    /// Find max r > l which satisfy f(a[l], a[l + 1], ..., a[r - 1]) or r = l if no such r exist.
+    /// f(T::S::identity()) == true must be held.
+    /// Time complexity is O(log^2N).
+    pub fn max_right<F>(&mut self, l: usize, mut f: F) -> usize
+    where
+        F: FnMut(<T::S as Monoid>::S) -> bool,
+    {
+        // TODO: O(log^2N) => O(logN)
+        let mut ng = self.n + 1;
+        let mut ok = l;
+        while ng - ok > 1 {
+            let mid = (ok + ng) / 2;
+            if f(self.query(l..mid)) {
+                ok = mid;
+            } else {
+                ng = mid;
+            }
+        }
+        ok
+    }
+
+    /// Find min l < r which satisfy f(a[l], a[l + 1], ..., a[r - 1]) or l = r if no such l exist.
+    /// f(T::S::identity()) == true must be held.
+    /// Time complexity is O(log^2N).
+    pub fn min_left<F>(&mut self, r: usize, mut f: F) -> usize
+    where
+        F: FnMut(<T::S as Monoid>::S) -> bool,
+    {
+        // TODO: O(log^2N) => O(logN)
+        let mut ng = -1;
+        let mut ok = r as isize;
+        while ok - ng > 1 {
+            let mid = (ok + ng) / 2;
+            if f(self.query(mid as usize..r)) {
+                ok = mid;
+            } else {
+                ng = mid;
+            }
+        }
+        ok as usize
+    }
+
     /// Apply lazy[p] to node[p] and propagate the lazy value to childs if exist.
     fn propagate(&mut self, p: usize) {
         if self.lazy[p] == T::map_identity() {
@@ -216,7 +258,7 @@ impl<T: MapMonoid> LazySegtree<T> {
 
 #[cfg(test)]
 mod test {
-    use super::{LazySegtree, MapMonoid, Max, Monoid};
+    use super::{Additive, LazySegtree, MapMonoid, Max, Monoid};
     use std::marker::PhantomData;
 
     struct MapAdditive<S>(PhantomData<fn() -> S>);
@@ -232,6 +274,22 @@ mod test {
         }
         fn composition(f: &Self::F, g: &Self::F) -> Self::F {
             f + g
+        }
+    }
+
+    struct EmptyMapMonoid<M>(PhantomData<fn() -> M>);
+
+    impl<M: Monoid> MapMonoid for EmptyMapMonoid<M> {
+        type S = M;
+        type F = ();
+        fn apply(_: &Self::F, x: &<Self::S as Monoid>::S) -> <Self::S as Monoid>::S {
+            x.clone()
+        }
+        fn map_identity() -> Self::F {
+            ()
+        }
+        fn composition(_: &Self::F, _: &Self::F) -> Self::F {
+            ()
         }
     }
 
@@ -380,5 +438,21 @@ mod test {
         let iter = std::iter::successors(Some(0), |&v| if v < 5 { Some(v + 1) } else { None });
         let ft = LazySegtree::<MapAdditive<Max<usize>>>::from_iter(iter.clone());
         assert_eq!(ft.len(), iter.count());
+    }
+
+    #[test]
+    fn test_max_right() {
+        let mut st = LazySegtree::<EmptyMapMonoid<Additive<usize>>>::from(vec![1, 2, 3, 4, 5]);
+        assert_eq!(st.max_right(0, |v| v <= 6), 3);
+        assert_eq!(st.max_right(0, |v| v <= 0), 0);
+        assert_eq!(st.max_right(0, |v| v <= 100), 5);
+    }
+
+    #[test]
+    fn test_min_left() {
+        let mut st = LazySegtree::<EmptyMapMonoid<Additive<usize>>>::from(vec![1, 2, 3, 4, 5]);
+        assert_eq!(st.min_left(5, |v| v <= 12), 2);
+        assert_eq!(st.min_left(5, |v| v <= 4), 5);
+        assert_eq!(st.min_left(5, |v| v <= 100), 0);
     }
 }

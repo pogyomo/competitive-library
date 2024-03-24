@@ -233,6 +233,48 @@ impl<T: Monoid> Segtree<T> {
         T::operate(&lv, &rv)
     }
 
+    /// Find max r > l which satisfy f(a[l], a[l + 1], ..., a[r - 1]) or r = l if no such r exist.
+    /// f(T::identity()) == true must be held.
+    /// Time complexity is O(log^2N).
+    pub fn max_right<F>(&self, l: usize, mut f: F) -> usize
+    where
+        F: FnMut(T::S) -> bool,
+    {
+        // TODO: O(log^2N) => O(logN)
+        let mut ng = self.n + 1;
+        let mut ok = l;
+        while ng - ok > 1 {
+            let mid = (ok + ng) / 2;
+            if f(self.query(l..mid)) {
+                ok = mid;
+            } else {
+                ng = mid;
+            }
+        }
+        ok
+    }
+
+    /// Find min l < r which satisfy f(a[l], a[l + 1], ..., a[r - 1]) or l = r if no such l exist.
+    /// f(T::identity()) == true must be held.
+    /// Time complexity is O(log^2N).
+    pub fn min_left<F>(&self, r: usize, mut f: F) -> usize
+    where
+        F: FnMut(T::S) -> bool,
+    {
+        // TODO: O(log^2N) => O(logN)
+        let mut ng = -1;
+        let mut ok = r as isize;
+        while ok - ng > 1 {
+            let mid = (ok + ng) / 2;
+            if f(self.query(mid as usize..r)) {
+                ok = mid;
+            } else {
+                ng = mid;
+            }
+        }
+        ok as usize
+    }
+
     fn leaf_base(&self) -> usize {
         self.n.next_power_of_two() - 1
     }
@@ -338,5 +380,21 @@ mod test {
         let iter = std::iter::successors(Some(0), |&v| if v < 5 { Some(v + 1) } else { None });
         let ft = Segtree::<Additive<usize>>::from_iter(iter.clone());
         assert_eq!(ft.len(), iter.count());
+    }
+
+    #[test]
+    fn test_max_right() {
+        let st = Segtree::<Additive<usize>>::from(vec![1, 2, 3, 4, 5]);
+        assert_eq!(st.max_right(0, |v| v <= 6), 3);
+        assert_eq!(st.max_right(0, |v| v <= 0), 0);
+        assert_eq!(st.max_right(0, |v| v <= 100), 5);
+    }
+
+    #[test]
+    fn test_min_left() {
+        let st = Segtree::<Additive<usize>>::from(vec![1, 2, 3, 4, 5]);
+        assert_eq!(st.min_left(5, |v| v <= 12), 2);
+        assert_eq!(st.min_left(5, |v| v <= 4), 5);
+        assert_eq!(st.min_left(5, |v| v <= 100), 0);
     }
 }
