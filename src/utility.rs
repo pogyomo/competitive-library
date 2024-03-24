@@ -61,7 +61,7 @@ pub fn rle<T: Eq, I: IntoIterator<Item = T>>(iter: I) -> Vec<(T, usize)> {
 /// Time complexity is O(N).
 pub fn max_subsequence_by<T, I, F>(iter: I, mut compare: F) -> Option<T>
 where
-    T: Ord + Clone + Add<T, Output = T>,
+    T: Clone + Add<T, Output = T>,
     I: IntoIterator<Item = T>,
     F: FnMut(&T, &T) -> Ordering,
 {
@@ -80,7 +80,7 @@ where
 /// Time complexity is O(N).
 pub fn max_subsequence_by_key<T, I, F, K>(iter: I, mut f: F) -> Option<T>
 where
-    T: Ord + Clone + Add<T, Output = T>,
+    T: Clone + Add<T, Output = T>,
     I: IntoIterator<Item = T>,
     F: FnMut(&T) -> K,
     K: Ord,
@@ -103,7 +103,7 @@ where
 /// Time complexity is O(N).
 pub fn min_subsequence_by<T, I, F>(iter: I, mut compare: F) -> Option<T>
 where
-    T: Ord + Clone + Add<T, Output = T>,
+    T: Clone + Add<T, Output = T>,
     I: IntoIterator<Item = T>,
     F: FnMut(&T, &T) -> Ordering,
 {
@@ -122,7 +122,7 @@ where
 /// Time complexity is O(N).
 pub fn min_subsequence_by_key<T, I, F, K>(iter: I, mut f: F) -> Option<T>
 where
-    T: Ord + Clone + Add<T, Output = T>,
+    T: Clone + Add<T, Output = T>,
     I: IntoIterator<Item = T>,
     F: FnMut(&T) -> K,
     K: Ord,
