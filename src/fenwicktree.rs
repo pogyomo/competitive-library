@@ -182,7 +182,7 @@ impl<T: CommutativeMonoid> FenwickTree<T> {
     }
 
     /// operate(a[0], a[1], ..., a[p-1])
-    pub fn prefix(&mut self, p: usize) -> T::S {
+    pub fn prefix(&self, p: usize) -> T::S {
         let ps = successors(Some(p), |&p| Some(p - lsb(p))).take_while(|&p| p > 0);
         let mut res = T::identity();
         for p in ps {
