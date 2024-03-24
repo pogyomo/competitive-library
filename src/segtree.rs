@@ -1,7 +1,6 @@
 use std::{
     cmp::{max, min},
     marker::PhantomData,
-    mem::replace,
     ops::{Add, Bound, Mul, RangeBounds},
 };
 
@@ -133,18 +132,29 @@ pub struct Segtree<T: Monoid> {
     n: usize,
 }
 
-impl<T: Monoid> From<Vec<T::S>> for Segtree<T> {
-    fn from(value: Vec<T::S>) -> Self {
-        let n = value.len();
+impl<T: Monoid> FromIterator<T::S> for Segtree<T> {
+    fn from_iter<I: IntoIterator<Item = T::S>>(iter: I) -> Self {
+        // TODO: any good way for iter which size is unknown?
+        let iter = iter.into_iter();
+        let (lower, upper) = iter.size_hint();
+        assert_eq!(upper, Some(lower));
+
+        let n = lower;
         let n2 = n.next_power_of_two();
         let mut node = Vec::with_capacity(n2 + n2 - 1);
         node.resize(n2 - 1, T::identity());
-        node.extend(value);
+        node.extend(iter);
         node.resize(n2 + n2 - 1, T::identity());
         for i in (0..n2 - 1).rev() {
             node[i] = T::operate(&node[(i << 1) + 1], &node[(i << 1) + 2]);
         }
         Self { node, n }
+    }
+}
+
+impl<T: Monoid> From<Vec<T::S>> for Segtree<T> {
+    fn from(value: Vec<T::S>) -> Self {
+        Self::from_iter(value)
     }
 }
 

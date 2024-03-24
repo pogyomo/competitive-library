@@ -139,14 +139,25 @@ pub struct FenwickTree<T: CommutativeMonoid> {
     n: usize,
 }
 
-impl<T: CommutativeMonoid> From<Vec<T::S>> for FenwickTree<T> {
-    /// TODO: O(nlogn) => O(n)?
-    fn from(value: Vec<T::S>) -> Self {
-        let mut res = Self::new(value.len());
-        for (p, value) in value.into_iter().enumerate() {
+impl<T: CommutativeMonoid> FromIterator<T::S> for FenwickTree<T> {
+    fn from_iter<I: IntoIterator<Item = T::S>>(iter: I) -> Self {
+        // TODO: any good way for iter which size is unknown?
+        let iter = iter.into_iter();
+        let (lower, upper) = iter.size_hint();
+        assert_eq!(upper, Some(lower));
+
+        // TODO: O(nlogn) => O(n)?
+        let mut res = Self::new(lower);
+        for (p, value) in iter.enumerate() {
             res.update(p, value);
         }
         res
+    }
+}
+
+impl<T: CommutativeMonoid> From<Vec<T::S>> for FenwickTree<T> {
+    fn from(value: Vec<T::S>) -> Self {
+        Self::from_iter(value)
     }
 }
 
