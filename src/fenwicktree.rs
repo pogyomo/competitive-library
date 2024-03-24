@@ -84,9 +84,11 @@ pub struct Additive<T>(PhantomData<fn() -> T>);
 
 impl<T: AdditiveIdentity + Clone> CommutativeMonoid for Additive<T> {
     type S = T;
+
     fn identity() -> Self::S {
         T::identity()
     }
+
     fn operate(a: &Self::S, b: &Self::S) -> Self::S {
         a.clone() + b.clone()
     }
