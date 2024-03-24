@@ -161,7 +161,7 @@ impl<T: Monoid> From<&Vec<T::S>> for Segtree<T> {
 
 impl<T: Monoid> Segtree<T> {
     pub fn new(n: usize) -> Self {
-        let len = 2 * n.next_power_of_two() - 1;
+        let len = (n.next_power_of_two() << 1) - 1;
         let node = vec![T::identity(); len];
         Self { node, n }
     }
