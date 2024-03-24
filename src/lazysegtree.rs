@@ -206,8 +206,11 @@ impl<T: MapMonoid> LazySegtree<T> {
         F: FnMut(<T::S as Monoid>::S) -> bool,
     {
         // TODO: O(log^2N) => O(logN)
-        let mut ng = -1;
-        let mut ok = r as isize;
+        if f(self.query(0..r)) {
+            return 0;
+        }
+        let mut ng = 0;
+        let mut ok = r;
         while ok - ng > 1 {
             let mid = (ok + ng) / 2;
             if f(self.query(mid as usize..r)) {
@@ -216,7 +219,7 @@ impl<T: MapMonoid> LazySegtree<T> {
                 ng = mid;
             }
         }
-        ok as usize
+        ok
     }
 
     /// Apply lazy[p] to node[p] and propagate the lazy value to childs if exist.
