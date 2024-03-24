@@ -150,18 +150,6 @@ impl<T: CommutativeMonoid> From<Vec<T::S>> for FenwickTree<T> {
     }
 }
 
-impl<T: CommutativeMonoid> From<&[T::S]> for FenwickTree<T> {
-    fn from(value: &[T::S]) -> Self {
-        Self::from(value.to_vec())
-    }
-}
-
-impl<T: CommutativeMonoid> From<&Vec<T::S>> for FenwickTree<T> {
-    fn from(value: &Vec<T::S>) -> Self {
-        Self::from(value.clone())
-    }
-}
-
 impl<T: CommutativeMonoid> FenwickTree<T> {
     pub fn new(n: usize) -> Self {
         Self {
@@ -197,7 +185,7 @@ mod test {
     #[test]
     fn test_additive() {
         let mut a = vec![1, 2, 3, 4, 5];
-        let mut ft = FenwickTree::<Additive<usize>>::from(&a);
+        let mut ft = FenwickTree::<Additive<usize>>::from(a.clone());
         for p in 0..=a.len() {
             assert_eq!(ft.prefix(p), a[0..p].iter().sum());
         }
@@ -211,7 +199,7 @@ mod test {
     #[test]
     fn test_multiplicative() {
         let mut a = vec![1, 2, 3, 4, 5];
-        let mut ft = FenwickTree::<Multiplicative<usize>>::from(&a);
+        let mut ft = FenwickTree::<Multiplicative<usize>>::from(a.clone());
         for p in 0..=a.len() {
             assert_eq!(ft.prefix(p), a[0..p].iter().product());
         }
@@ -225,7 +213,7 @@ mod test {
     #[test]
     fn test_max() {
         let mut a = vec![1, 2, 3, 4, 5];
-        let mut ft = FenwickTree::<Max<usize>>::from(&a);
+        let mut ft = FenwickTree::<Max<usize>>::from(a.clone());
         for p in 0..=a.len() {
             assert_eq!(
                 ft.prefix(p),
@@ -245,7 +233,7 @@ mod test {
     #[test]
     fn test_min() {
         let mut a = vec![1, 2, 3, 4, 5];
-        let mut ft = FenwickTree::<Min<usize>>::from(&a);
+        let mut ft = FenwickTree::<Min<usize>>::from(a.clone());
         for p in 0..=a.len() {
             assert_eq!(
                 ft.prefix(p),

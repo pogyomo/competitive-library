@@ -147,18 +147,6 @@ impl<T: Monoid> From<Vec<T::S>> for Segtree<T> {
     }
 }
 
-impl<T: Monoid> From<&[T::S]> for Segtree<T> {
-    fn from(value: &[T::S]) -> Self {
-        Self::from(value.to_vec())
-    }
-}
-
-impl<T: Monoid> From<&Vec<T::S>> for Segtree<T> {
-    fn from(value: &Vec<T::S>) -> Self {
-        Self::from(value.clone())
-    }
-}
-
 impl<T: Monoid> Segtree<T> {
     pub fn new(n: usize) -> Self {
         let len = (n.next_power_of_two() << 1) - 1;

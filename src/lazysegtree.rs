@@ -49,18 +49,6 @@ impl<T: MapMonoid> From<Vec<<T::S as Monoid>::S>> for LazySegtree<T> {
     }
 }
 
-impl<T: MapMonoid> From<&[<T::S as Monoid>::S]> for LazySegtree<T> {
-    fn from(value: &[<T::S as Monoid>::S]) -> Self {
-        Self::from(value.to_vec())
-    }
-}
-
-impl<T: MapMonoid> From<&Vec<<T::S as Monoid>::S>> for LazySegtree<T> {
-    fn from(value: &Vec<<T::S as Monoid>::S>) -> Self {
-        Self::from(value.clone())
-    }
-}
-
 impl<T: MapMonoid> LazySegtree<T> {
     pub fn new(n: usize) -> Self {
         let len = (n.next_power_of_two() << 1) - 1;
