@@ -92,9 +92,10 @@ impl NTT {
     }
 
     /// Calculate convolution of given two sequences.
+    /// If at least one of two sequences is empty, return empty sequence.
     /// Time complexity is O(NlogN).
     pub fn convolution(&self, mut a: Vec<u64>, mut b: Vec<u64>) -> Vec<u64> {
-        if a.len() == 0 && b.len() == 0 {
+        if a.len() == 0 || b.len() == 0 {
             return Vec::new();
         }
 
@@ -174,5 +175,16 @@ mod test {
             }
         }
         assert_eq!(ntt.convolution(a, b), ab);
+    }
+
+    #[test]
+    fn test_convolution_with_empty_list() {
+        let p = 998244353;
+        let ntt = NTT::new(p);
+        let a = vec![1, 2, 3];
+        let b = vec![2, 3, 4];
+        assert_eq!(ntt.convolution(a, Vec::new()), Vec::new());
+        assert_eq!(ntt.convolution(Vec::new(), b), Vec::new());
+        assert_eq!(ntt.convolution(Vec::new(), Vec::new()), Vec::new());
     }
 }

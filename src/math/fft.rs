@@ -49,8 +49,13 @@ pub fn ifft<T: Float>(a: Vec<Complex<T>>) -> Vec<Complex<T>> {
 }
 
 /// Calculate convolution of given two sequences.
+/// If at least one of two sequences is empty, return empty sequence.
 /// Time complexity is O(NlogN).
 pub fn convolution<T: Float>(mut a: Vec<T>, mut b: Vec<T>) -> Vec<T> {
+    if a.len() == 0 || b.len() == 0 {
+        return Vec::new();
+    }
+
     let res_n = a.len() + b.len() - 1;
     let n = res_n.next_power_of_two();
     a.resize(n, T::zero());
@@ -84,5 +89,14 @@ mod test {
                 String::from("12")
             ]
         );
+    }
+
+    #[test]
+    fn test_convolution_with_empty_list() {
+        let a = vec![1.0, 2.0, 3.0];
+        let b = vec![2.0, 3.0, 4.0];
+        assert_eq!(convolution(a, Vec::new()), Vec::new());
+        assert_eq!(convolution(Vec::new(), b), Vec::new());
+        assert_eq!(convolution::<f64>(Vec::new(), Vec::new()), Vec::new());
     }
 }
