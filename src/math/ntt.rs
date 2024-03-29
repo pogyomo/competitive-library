@@ -167,7 +167,12 @@ mod test {
         let ntt = NTT::new(p);
         let a = vec![1, 2, 3];
         let b = vec![2, 3, 4];
-        let ab = ntt.convolution(a, b);
-        assert_eq!(ab, vec![2, 7, 16, 17, 12]);
+        let mut ab = vec![0; a.len() + b.len() - 1];
+        for i in 0..a.len() {
+            for j in 0..b.len() {
+                ab[i + j] += a[i] * b[j];
+            }
+        }
+        assert_eq!(ntt.convolution(a, b), ab);
     }
 }
