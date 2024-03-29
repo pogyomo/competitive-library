@@ -75,6 +75,11 @@ impl NTT {
         Self { p, root, iroot }
     }
 
+    /// Construct a new NTT object with `p` = 998244353.
+    pub fn new998244353() -> Self {
+        Self::new(998244353)
+    }
+
     /// Perform number theoretic transform. We expect the size of `a` is power of two.
     /// TIme complexity is O(NlogN).
     pub fn ntt(&self, a: Vec<u64>) -> Vec<u64> {
