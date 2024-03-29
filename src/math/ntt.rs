@@ -161,16 +161,14 @@ mod test {
 
     #[test]
     fn test_ntt_and_intt() {
-        let p = 998244353;
         let v = vec![1, 2, 3, 4];
-        let ntt = NTT::new(p);
+        let ntt = NTT::new998244353();
         assert_eq!(ntt.intt(ntt.ntt(v.clone())), v);
     }
 
     #[test]
     fn test_convolution() {
-        let p = 998244353;
-        let ntt = NTT::new(p);
+        let ntt = NTT::new998244353();
         let a = vec![1, 2, 3];
         let b = vec![2, 3, 4];
         let mut ab = vec![0; a.len() + b.len() - 1];
@@ -184,8 +182,7 @@ mod test {
 
     #[test]
     fn test_convolution_with_empty_list() {
-        let p = 998244353;
-        let ntt = NTT::new(p);
+        let ntt = NTT::new998244353();
         let a = vec![1, 2, 3];
         let b = vec![2, 3, 4];
         assert_eq!(ntt.convolution(a, Vec::new()), Vec::new());
