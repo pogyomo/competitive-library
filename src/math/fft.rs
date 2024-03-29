@@ -20,7 +20,7 @@ fn fft_impl<T: Float>(a: Vec<Complex<T>>, inv: T) -> Vec<Complex<T>> {
     let f = fft_impl(f, inv);
     let g = fft_impl(g, inv);
 
-    let theta = (T::one() + T::one()) * T::PI * inv / T::from_usize(n);
+    let theta = (T::one() + T::one()) * T::PI * inv / T::from_usize(n).unwrap();
     let zeta = Complex::new(T::cos(theta), T::sin(theta));
 
     let mut p = Complex::new(T::one(), T::zero());
@@ -44,7 +44,7 @@ pub fn ifft<T: Float>(a: Vec<Complex<T>>) -> Vec<Complex<T>> {
     let n = a.len();
     fft_impl(a, -T::one())
         .into_iter()
-        .map(|a| a / T::from_usize(n))
+        .map(|a| a / T::from_usize(n).unwrap())
         .collect()
 }
 

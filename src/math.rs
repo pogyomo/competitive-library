@@ -6,9 +6,14 @@ use std::ops::{
     Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign,
 };
 
-macro_rules! impl_uint {
+macro_rules! impl_num_ops {
     ($($type:ident),*) => {$(
         impl NumOps for $type {}
+    )*};
+}
+
+macro_rules! impl_uint {
+    ($($type:ident),*) => {$(
         impl Integral for $type {
             fn zero() -> Self { 0 }
             fn one() -> Self { 1 }
@@ -19,7 +24,6 @@ macro_rules! impl_uint {
 
 macro_rules! impl_int {
     ($($type:ident),*) => {$(
-        impl NumOps for $type {}
         impl Integral for $type {
             fn zero() -> Self { 0 }
             fn one() -> Self { 1 }
@@ -28,20 +32,21 @@ macro_rules! impl_int {
     )*};
 }
 
-macro_rules! impl_float {
+macro_rules! impl_float_common {
     ($($type:ident),*) => {$(
-        impl NumOps for $type {}
-        impl Float for $type {
-            const PI: $type = ::std::$type::consts::PI;
+        const PI: $type = ::std::$type::consts::PI;
 
-            fn zero() -> Self { 0.0 }
-            fn one() -> Self { 1.0 }
-            fn cos(self) -> Self { self.cos() }
-            fn sin(self) -> Self { self.sin() }
-            // TODO: I just casted usize to f32/f64. Should I return None if the cast lose infomation?
-            fn from_usize(value: usize) -> Self { value as $type }
-        }
+        fn zero() -> Self { 0.0 }
+        fn one() -> Self { 1.0 }
+        fn cos(self) -> Self { self.cos() }
+        fn sin(self) -> Self { self.sin() }
     )*};
+}
+
+impl_num_ops! {
+    u8, u16, u32, u64, u128, usize,
+    i8, i16, i32, i64, i128, isize,
+    f32, f64
 }
 
 impl_uint! {
@@ -52,8 +57,18 @@ impl_int! {
     i8, i16, i32, i64, i128, isize
 }
 
-impl_float! {
-    f32, f64
+impl Float for f32 {
+    impl_float_common!(f32);
+    fn from_usize(value: usize) -> Option<Self> {
+        Some(u16::try_from(value).ok()?.into())
+    }
+}
+
+impl Float for f64 {
+    impl_float_common!(f64);
+    fn from_usize(value: usize) -> Option<Self> {
+        Some(u32::try_from(value).ok()?.into())
+    }
 }
 
 // NOTE: These trait is subject to change. Some functions may be removed or added.
@@ -89,7 +104,7 @@ pub trait Float: NumOps + Neg<Output = Self> + PartialEq + PartialOrd + Copy + S
     fn one() -> Self;
     fn cos(self) -> Self;
     fn sin(self) -> Self;
-    fn from_usize(value: usize) -> Self; // TODO: Create a trait for conversion?
+    fn from_usize(value: usize) -> Option<Self>; // TODO: Create a trait for conversion?
 }
 
 /// A struct represent complex number
