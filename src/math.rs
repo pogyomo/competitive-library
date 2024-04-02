@@ -1,5 +1,6 @@
 pub mod fft;
 pub mod ntt;
+pub mod prime;
 pub mod theory;
 
 use std::ops::{
