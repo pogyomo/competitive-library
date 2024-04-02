@@ -1,4 +1,5 @@
 use super::Integral;
+use std::iter::successors;
 
 /// Find all prime factor and its amount. Time complexity is O(√N).
 /// For any `n`, prime_factorize(n) == prime_factorize(|n|).
@@ -37,6 +38,57 @@ pub fn is_prime<T: Integral>(n: T) -> bool {
     true
 }
 
+fn pow_mod(x: u128, mut n: u128, p: u128) -> u128 {
+    let mut a = x % p;
+    let mut res = 1;
+    while n != 0 {
+        if n & 1 != 0 {
+            res = (res * a) % p;
+        }
+        a = (a * a) % p;
+        n >>= 1;
+    }
+    res
+}
+
+/// Check if the given integer is prime or not based on Miller-Rabin primality test.
+/// Time complexity is O(logn)
+pub fn fast_is_prime(n: u64) -> bool {
+    // reference:
+    // * https://miller-rabin.appspot.com
+    // * https://drken1215.hatenablog.com/entry/2023/05/23/233000
+    const A: [u64; 7] = [2, 325, 9375, 28178, 450775, 9780504, 1795265022];
+
+    match n {
+        0 | 1 => return false,
+        2 => return true,
+        n if n & 1 == 0 => return false,
+        _ => (),
+    }
+
+    let (s, d) = {
+        let mut n = n - 1;
+        let mut s = 0;
+        while n & 1 == 0 {
+            s += 1;
+            n >>= 1;
+        }
+        (s, n)
+    };
+    for a in A.into_iter().map(|a| a % n).take_while(|a| a % n != 0) {
+        let x = pow_mod(a as u128, d as u128, n as u128) as u64;
+        if x != 1 {
+            let xs = successors(Some(x), |&x| {
+                Some(((x as u128 * x as u128) % n as u128) as u64)
+            });
+            if xs.take(s).all(|x| x != n - 1) {
+                return false;
+            }
+        }
+    }
+    true
+}
+
 /// Find greatest common divider of `a` and `b`.
 /// For any `a` and `b`, gcd(a, b) == gcd(|a|, |b|).
 pub fn gcd<T: Integral>(a: T, b: T) -> T {
@@ -57,7 +109,7 @@ pub fn lcm<T: Integral>(a: T, b: T) -> T {
 
 #[cfg(test)]
 mod test {
-    use super::{gcd, is_prime, lcm, prime_factorize};
+    use super::{fast_is_prime, gcd, is_prime, lcm, prime_factorize};
 
     #[test]
     fn test_prime_factorize() {
@@ -85,5 +137,13 @@ mod test {
         assert_eq!(lcm(2, 5), 10);
         assert_eq!(lcm(10, 15), 30);
         assert_eq!(lcm(-10, -15), 30);
+    }
+
+    #[test]
+    fn test_fast_is_prime() {
+        assert!(fast_is_prime(2));
+        assert!(fast_is_prime(998244353));
+        assert!(!fast_is_prime(u64::MAX));
+        assert!(!fast_is_prime(120));
     }
 }
