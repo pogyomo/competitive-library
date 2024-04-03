@@ -9,7 +9,7 @@ fn gcd(mut a: u64, mut b: u64) -> u64 {
 }
 
 // Find a prime factor of `n` using Pollard's rho algorithm. We expect given `n` is not prime.
-// Time complexity is O(n^(1/4)logn).
+// Time complexity is O(n^(1/4)polylog(n)).
 fn find_prime_factor(n: u64) -> u64 {
     // reference: https://qiita.com/t_fuki/items/7cd50de54d3c5d063b4a
     if n & 1 == 0 {
@@ -38,7 +38,7 @@ fn find_prime_factor(n: u64) -> u64 {
     unreachable!()
 }
 
-/// Find all prime factor and its amount. Time complexity is O(n^(1/4)logn).
+/// Find all prime factor and its amount. Time complexity is O(n^(1/4)polylog(n)).
 pub fn prime_factorize(mut n: u64) -> Vec<(u64, usize)> {
     let mut res = BTreeMap::new();
     while n > 1 && !is_prime(n) {
