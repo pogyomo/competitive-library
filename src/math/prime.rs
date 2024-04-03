@@ -1,34 +1,70 @@
 use std::{collections::BTreeMap, iter::successors};
 
-/// Find all prime factor and its amount. Time complexity is O(√n)
-pub fn prime_factorize(mut n: u64) -> Vec<(u64, usize)> {
-    let mut res = Vec::new();
-    let mut k = 2;
-    while k * k <= n {
-        if n % k == 0 {
-            let mut count = 0;
-            while n % k == 0 {
-                n /= k;
-                count += 1;
-            }
-            res.push((k, count));
-        }
-        k += 1;
+// Find great common divider of `a` and `b`. Time complexity is O(logn)
+fn gcd(mut a: u64, mut b: u64) -> u64 {
+    while b != 0 {
+        (a, b) = (b, a % b);
     }
-    if n != 1 {
-        res.push((n, 1));
-    }
-    res
+    a
 }
 
-/// A struct to perform prime factorize by pre-calculated table.
+// Find a prime factor of `n` using Pollard's rho algorithm. We expect given `n` is not prime.
+// Time complexity is O(n^(1/4)logn).
+fn find_prime_factor(n: u64) -> u64 {
+    // reference: https://qiita.com/t_fuki/items/7cd50de54d3c5d063b4a
+    if n & 1 == 0 {
+        return 2;
+    }
+    for c in 1..n {
+        let f = |x: u64| (((x as u128 * x as u128) % n as u128) as u64 + c) % n;
+        let (mut x, mut y) = (0, 0);
+        let mut g = 1;
+        while g == 1 {
+            x = f(x);
+            y = f(f(y));
+            g = gcd(x.abs_diff(y), n);
+        }
+        if g == n {
+            continue;
+        }
+        if is_prime(g) {
+            return g;
+        } else if is_prime(n / g) {
+            return n / g;
+        } else {
+            return find_prime_factor(g);
+        }
+    }
+    unreachable!()
+}
+
+/// Find all prime factor and its amount. Time complexity is O(n^(1/4)logn).
+pub fn prime_factorize(mut n: u64) -> Vec<(u64, usize)> {
+    let mut res = BTreeMap::new();
+    while n > 1 && !is_prime(n) {
+        let p = find_prime_factor(n);
+        let mut count = 0;
+        while n % p == 0 {
+            n /= p;
+            count += 1;
+        }
+        res.insert(p, count);
+    }
+    if n > 1 {
+        res.insert(n, 1);
+    }
+    res.into_iter().collect()
+}
+
+/// A struct to perform prime factorize by using pre-calculated table.
 #[derive(Clone)]
 pub struct PrimeFactorizer {
     spf: Vec<usize>,
 }
 
+// reference: https://algo-logic.info/prime-fact
 impl PrimeFactorizer {
-    /// Prepare for multiple prime factorization query. Time complexity is O(nloglogn)
+    /// Prepare for multiple prime factorization query. Time complexity is O(nloglogn).
     pub fn new(n: usize) -> Self {
         let mut spf = Vec::with_capacity(n + 1);
         for i in 0..=n {
@@ -46,7 +82,7 @@ impl PrimeFactorizer {
         PrimeFactorizer { spf }
     }
 
-    /// Find all prime factor and its amount. Time complexity is O(logn)
+    /// Find all prime factor and its amount. Time complexity is O(logn).
     pub fn factorize(&self, mut n: usize) -> Vec<(usize, usize)> {
         assert!(n < self.spf.len());
         let mut map = BTreeMap::new();
@@ -59,7 +95,7 @@ impl PrimeFactorizer {
     }
 }
 
-// Calculate x^n mod p. Time complexity is O(logn)
+// Calculate x^n mod p. Time complexity is O(logn).
 fn pow_mod(x: u128, mut n: u128, p: u128) -> u128 {
     let mut a = x % p;
     let mut res = 1;
@@ -74,7 +110,7 @@ fn pow_mod(x: u128, mut n: u128, p: u128) -> u128 {
 }
 
 /// Check if the given integer is prime or not based on Miller-Rabin primality test.
-/// Time complexity is O(logn)
+/// Time complexity is O(logn).
 pub fn is_prime(n: u64) -> bool {
     // reference:
     // * https://miller-rabin.appspot.com
