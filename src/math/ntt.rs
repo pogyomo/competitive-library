@@ -81,13 +81,15 @@ impl NTT {
     }
 
     /// Perform number theoretic transform. We expect the size of `a` is power of two.
-    /// TIme complexity is O(NlogN).
+    ///
+    /// Time complexity is O(nlogn).
     pub fn ntt(&self, a: Vec<u64>) -> Vec<u64> {
         self.ntt_impl(a, false)
     }
 
     /// Perform inverse number theoretic transform. We expect the size of `a` is power of two.
-    /// TIme complexity is O(NlogN).
+    ///
+    /// Time complexity is O(nlogn).
     pub fn intt(&self, a: Vec<u64>) -> Vec<u64> {
         let n = a.len() as u64;
         self.ntt_impl(a, true)
@@ -97,8 +99,10 @@ impl NTT {
     }
 
     /// Calculate convolution of given two sequences.
+    ///
     /// If at least one of two sequences is empty, return empty sequence.
-    /// Time complexity is O(NlogN).
+    ///
+    /// Time complexity is O(nlogn).
     pub fn convolution(&self, mut a: Vec<u64>, mut b: Vec<u64>) -> Vec<u64> {
         if a.len() == 0 || b.len() == 0 {
             return Vec::new();

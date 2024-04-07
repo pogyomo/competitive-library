@@ -16,18 +16,24 @@ impl<T: Debug> Debug for Compress<T> {
 }
 
 impl<T: Ord> Compress<T> {
-    /// Returns compressed given value if exist. Time complexity is O(logN).
+    /// Returns compressed given value if exist.
+    ///
+    /// Time complexity is O(logN).
     pub fn compress(&self, value: &T) -> Option<usize> {
         self.map.binary_search(value).ok()
     }
 
-    /// Returns decompressed given value if exist. Time complexity is O(1).
+    /// Returns decompressed given value if exist.
+    ///
+    /// Time complexity is O(1).
     pub fn decompress(&self, value: usize) -> Option<&T> {
         self.map.get(value)
     }
 }
 
-/// Perform coordinate compression. Time complexity is O(NlogN).
+/// Perform coordinate compression.
+///
+/// Time complexity is O(NlogN).
 pub fn compress<T: Ord, I: IntoIterator<Item = T>>(iter: I) -> Compress<T> {
     let mut map = iter.into_iter().collect::<Vec<_>>();
     map.sort();
@@ -35,7 +41,9 @@ pub fn compress<T: Ord, I: IntoIterator<Item = T>>(iter: I) -> Compress<T> {
     Compress { map }
 }
 
-/// Compress given data with run-length encoding. Time complexity is O(N).
+/// Compress given data with run-length encoding.
+///
+/// Time complexity is O(N).
 pub fn rle<T: Eq, I: IntoIterator<Item = T>>(iter: I) -> Vec<(T, usize)> {
     let mut iter = iter.into_iter();
     let mut res = Vec::new();
@@ -58,6 +66,7 @@ pub fn rle<T: Eq, I: IntoIterator<Item = T>>(iter: I) -> Vec<(T, usize)> {
 
 /// Calculate maximum sum of subsequence of given iterator with respect to the specified
 /// comparition function.
+///
 /// Time complexity is O(N).
 pub fn max_subsequence_by<T, I, F>(iter: I, mut compare: F) -> Option<T>
 where
@@ -77,6 +86,7 @@ where
 
 /// Calculate maximum sum of subsequence of given iterator with respect to the specified
 /// key extraction function.
+///
 /// Time complexity is O(N).
 pub fn max_subsequence_by_key<T, I, F, K>(iter: I, mut f: F) -> Option<T>
 where
@@ -89,6 +99,7 @@ where
 }
 
 /// Calculate maximum sum of subsequence of given iterator.
+///
 /// Time complexity is O(N).
 pub fn max_subsequence<T, I>(iter: I) -> Option<T>
 where
@@ -100,6 +111,7 @@ where
 
 /// Calculate minimum sum of subsequence of given iterator with respect to the specified
 /// comparition function.
+///
 /// Time complexity is O(N).
 pub fn min_subsequence_by<T, I, F>(iter: I, mut compare: F) -> Option<T>
 where
@@ -119,6 +131,7 @@ where
 
 /// Calculate minimum sum of subsequence of given iterator with respect to the specified
 /// key extraction function.
+///
 /// Time complexity is O(N).
 pub fn min_subsequence_by_key<T, I, F, K>(iter: I, mut f: F) -> Option<T>
 where
@@ -131,6 +144,7 @@ where
 }
 
 /// Calculate minimum sum of subsequence of given iterator.
+///
 /// Time complexity is O(N).
 pub fn min_subsequence<T, I>(iter: I) -> Option<T>
 where

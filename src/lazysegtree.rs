@@ -82,6 +82,7 @@ impl<T: MapMonoid> From<Vec<<T::S as Monoid>::S>> for LazySegtree<T> {
 }
 
 impl<T: MapMonoid> LazySegtree<T> {
+    /// Construct a new `LazySegtree` with length `n`.
     pub fn new(n: usize) -> Self {
         let len = (n.next_power_of_two() << 1) - 1;
         let node = vec![T::S::identity(); len];
@@ -89,10 +90,14 @@ impl<T: MapMonoid> LazySegtree<T> {
         Self { node, lazy, n }
     }
 
+    /// Returns the size of `LazySegtree`.
     pub fn len(&self) -> usize {
         self.n
     }
 
+    /// Returns a[p].
+    ///
+    /// Time complexity is O(logn).
     pub fn get(&mut self, p: usize) -> &<T::S as Monoid>::S {
         assert!(p < self.n);
         let p = p + self.leaf_base();
@@ -100,6 +105,9 @@ impl<T: MapMonoid> LazySegtree<T> {
         &self.node[p]
     }
 
+    /// a[p] = value.
+    ///
+    /// Time complexity is O(logn).
     pub fn set(&mut self, p: usize, value: <T::S as Monoid>::S) {
         let mut p = p + self.leaf_base();
         self.propagate_recursive(p);
@@ -110,6 +118,9 @@ impl<T: MapMonoid> LazySegtree<T> {
         }
     }
 
+    /// Perform a[range] <= f(a[range]).
+    ///
+    /// Time complexity is O(logn).
     pub fn apply<R: RangeBounds<usize>>(&mut self, range: R, f: T::F) {
         enum StackState {
             Update(usize, usize, usize),
@@ -144,6 +155,9 @@ impl<T: MapMonoid> LazySegtree<T> {
         }
     }
 
+    /// Calculate operate(a[range]).
+    ///
+    /// Time complexity is O(logn).
     pub fn query<R: RangeBounds<usize>>(&mut self, range: R) -> <T::S as Monoid>::S {
         enum StackState {
             Query(usize, usize, usize),
@@ -178,8 +192,10 @@ impl<T: MapMonoid> LazySegtree<T> {
     }
 
     /// Find max r > l which satisfy f(a[l], a[l + 1], ..., a[r - 1]) or r = l if no such r exist.
+    ///
     /// f(T::S::identity()) == true must be held.
-    /// Time complexity is O(log^2N).
+    ///
+    /// Time complexity is O(log^2n).
     pub fn max_right<F>(&mut self, l: usize, mut f: F) -> usize
     where
         F: FnMut(<T::S as Monoid>::S) -> bool,
@@ -199,8 +215,10 @@ impl<T: MapMonoid> LazySegtree<T> {
     }
 
     /// Find min l < r which satisfy f(a[l], a[l + 1], ..., a[r - 1]) or l = r if no such l exist.
+    ///
     /// f(T::S::identity()) == true must be held.
-    /// Time complexity is O(log^2N).
+    ///
+    /// Time complexity is O(log^2n).
     pub fn min_left<F>(&mut self, r: usize, mut f: F) -> usize
     where
         F: FnMut(<T::S as Monoid>::S) -> bool,

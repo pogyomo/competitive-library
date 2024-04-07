@@ -194,7 +194,9 @@ impl<T: CommutativeMonoid> FenwickTree<T> {
     }
 
     /// Find max p which satisfy f(a[0], a[1], ..., a[p - 1]) or p = 0 if no such p exist.
+    ///
     /// f(T::identity()) == true must be held.
+    ///
     /// Time complexity is O(log^2N).
     pub fn max_right<F: FnMut(T::S) -> bool>(&self, mut f: F) -> usize {
         // TODO: O(log^2N) => O(logN)

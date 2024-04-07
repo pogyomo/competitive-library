@@ -71,7 +71,9 @@ where
     Self::V: Clone,
 {
     /// Calculate minimum number of edge in path from `start` to all vertex.
+    ///
     /// `dist` must be initialized to None for all vertex.
+    ///
     /// Time complexity is O(V + E).
     fn bfs<D>(&self, start: Self::V, mut dist: D) -> D
     where
@@ -100,8 +102,10 @@ where
     Self::V: Ord + Clone,
     Self::W: Ord + Clone + Add<Self::W, Output = Self::W>,
 {
-    /// Calculate shortest path distance from `start` to all vertex
+    /// Calculate shortest path distance from `start` to all vertex.
+    ///
     /// `dist` must be initialized to None for all vertex.
+    ///
     /// Time complexity is O((E + V)logV).
     fn dijkstra<D>(&self, start: Self::V, init: Self::W, mut dist: D) -> D
     where
@@ -135,6 +139,7 @@ where
 }
 
 /// A trait to hold distance to any vertices.
+///
 /// This trait is for switch data structure by target vertices type.
 pub trait DistanceTable<V, D> {
     fn distance(&self, v: &V) -> Option<&D>;

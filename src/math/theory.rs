@@ -1,7 +1,10 @@
 use super::Integral;
 
 /// Find greatest common divider of `a` and `b`.
+///
 /// For any `a` and `b`, gcd(a, b) == gcd(|a|, |b|).
+///
+/// Time complexity is O(logmin(|a|, |b|)).
 pub fn gcd<T: Integral>(a: T, b: T) -> T {
     let (a, b) = (a.abs(), b.abs());
     if b == T::zero() {
@@ -12,7 +15,10 @@ pub fn gcd<T: Integral>(a: T, b: T) -> T {
 }
 
 /// Find least common multiple of `a` and `b`.
+///
 /// For any `a` and `b`, lcm(a, b) == lcm(|a|, |b|).
+///
+/// Time complexity is O(logmin(|a|, |b|)).
 pub fn lcm<T: Integral>(a: T, b: T) -> T {
     let (a, b) = (a.abs(), b.abs());
     (a / gcd(a, b)) * b

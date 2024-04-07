@@ -33,13 +33,15 @@ fn fft_impl<T: Float>(a: Vec<Complex<T>>, inv: T) -> Vec<Complex<T>> {
 }
 
 /// Perform fast fourier transform for `a`. We expect the size of `a` is power of two.
-/// Time complexity is O(NlogN).
+///
+/// Time complexity is O(nlogn).
 pub fn fft<T: Float>(a: Vec<Complex<T>>) -> Vec<Complex<T>> {
     fft_impl(a, T::one())
 }
 
 /// Perform inverse fast fourier transform for `a`. We expect the size of `a` is power of two.
-/// Time complexity is O(NlogN).
+///
+/// Time complexity is O(nlogn).
 pub fn ifft<T: Float>(a: Vec<Complex<T>>) -> Vec<Complex<T>> {
     let n = a.len();
     fft_impl(a, -T::one())
@@ -49,8 +51,10 @@ pub fn ifft<T: Float>(a: Vec<Complex<T>>) -> Vec<Complex<T>> {
 }
 
 /// Calculate convolution of given two sequences.
+///
 /// If at least one of two sequences is empty, return empty sequence.
-/// Time complexity is O(NlogN).
+///
+/// Time complexity is O(nlogn).
 pub fn convolution<T: Float>(mut a: Vec<T>, mut b: Vec<T>) -> Vec<T> {
     if a.len() == 0 || b.len() == 0 {
         return Vec::new();

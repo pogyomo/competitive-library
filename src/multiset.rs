@@ -28,6 +28,7 @@ impl<T: Ord> FromIterator<T> for Multiset<T> {
 }
 
 impl<T> Multiset<T> {
+    /// Construct a new `Multiset`.
     pub fn new() -> Self {
         Self {
             kinds: 0,
@@ -38,6 +39,9 @@ impl<T> Multiset<T> {
 }
 
 impl<T: Ord> Multiset<T> {
+    /// Insert a `value` to set.
+    ///
+    /// Time complexity is O(logn).
     pub fn insert(&mut self, value: T) {
         self.size += 1;
         if let Some(count) = self.map.get(&value) {
@@ -48,6 +52,9 @@ impl<T: Ord> Multiset<T> {
         }
     }
 
+    /// Remove `value` from set if exist.
+    ///
+    /// Time complexity is O(logn).
     pub fn remove(&mut self, value: &T) {
         self.size = self.size.saturating_sub(1);
         match self.map.get_mut(value) {
@@ -60,10 +67,14 @@ impl<T: Ord> Multiset<T> {
         }
     }
 
+    /// Returns number of `value` in set.
+    ///
+    /// Time complexity is O(logn).
     pub fn count(&self, value: &T) -> usize {
         self.map.get(value).copied().unwrap_or(0)
     }
 
+    /// Returns iterator over elements inside of given range.
     pub fn range<R: RangeBounds<T>>(&self, range: R) -> Range<'_, T> {
         Range::new(self.map.range(range))
     }
@@ -71,11 +82,15 @@ impl<T: Ord> Multiset<T> {
 
 impl<T> Multiset<T> {
     /// Returns the number of different elements in the set.
+    ///
+    /// Time complexity is O(1).
     pub fn kinds(&self) -> usize {
         self.kinds
     }
 
     /// Returns the number of elements in the set.
+    ///
+    /// Time complexity is O(1).
     pub fn len(&self) -> usize {
         self.size
     }

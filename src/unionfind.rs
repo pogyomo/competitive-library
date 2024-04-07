@@ -14,6 +14,8 @@ impl UnionFind {
     }
 
     /// Returns the root element of the group to which the element belongs.
+    ///
+    /// Amortized time complexity is O(α(n)).
     pub fn root(&mut self, x: usize) -> usize {
         assert!(x < self.n);
         match self.parent[x] {
@@ -27,6 +29,8 @@ impl UnionFind {
     }
 
     /// Returns true if the two elements is in same group.
+    ///
+    /// Amortized time complexity is O(α(n)).
     pub fn is_same(&mut self, x: usize, y: usize) -> bool {
         assert!(x < self.n && y < self.n);
         self.root(x) == self.root(y)
@@ -34,6 +38,8 @@ impl UnionFind {
 
     /// Merge two element. If the two elemnts is already in same group, return false.
     /// Otherwise return true.
+    ///
+    /// Amortized time complexity is O(α(n)).
     pub fn merge(&mut self, x: usize, y: usize) -> bool {
         assert!(x < self.n && y < self.n);
         let rx = self.root(x);
@@ -53,6 +59,8 @@ impl UnionFind {
     }
 
     /// Returns the size of group to which the element belongs.
+    ///
+    /// Time complexity is O(1).
     pub fn size(&self, x: usize) -> usize {
         assert!(x < self.n);
         self.size[x]

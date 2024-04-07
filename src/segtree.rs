@@ -181,16 +181,21 @@ impl<T: Monoid> From<Vec<T::S>> for Segtree<T> {
 }
 
 impl<T: Monoid> Segtree<T> {
+    /// Construct a new `Segtree` with length `n`.
     pub fn new(n: usize) -> Self {
         let len = (n.next_power_of_two() << 1) - 1;
         let node = vec![T::identity(); len];
         Self { node, n }
     }
 
+    /// Returns the size of `Segtree`.
     pub fn len(&self) -> usize {
         self.n
     }
 
+    /// a[p] = value.
+    ///
+    /// Time complexity is O(logn).
     pub fn set(&mut self, p: usize, value: T::S) {
         let base = self.leaf_base();
         self.node[p + base] = value;
@@ -201,10 +206,16 @@ impl<T: Monoid> Segtree<T> {
         }
     }
 
+    /// Returns a[p].
+    ///
+    /// Time complexity is O(1).
     pub fn get(&self, p: usize) -> &T::S {
         &self.node[p + self.leaf_base()]
     }
 
+    /// Returns operate(a[range]).
+    ///
+    /// Time complexity is O(logn).
     pub fn query<R: RangeBounds<usize>>(&self, range: R) -> T::S {
         let mut l = match range.start_bound() {
             Bound::Unbounded => 0,
@@ -234,7 +245,9 @@ impl<T: Monoid> Segtree<T> {
     }
 
     /// Find max r > l which satisfy f(a[l], a[l + 1], ..., a[r - 1]) or r = l if no such r exist.
+    ///
     /// f(T::identity()) == true must be held.
+    ///
     /// Time complexity is O(log^2N).
     pub fn max_right<F>(&self, l: usize, mut f: F) -> usize
     where
@@ -255,7 +268,9 @@ impl<T: Monoid> Segtree<T> {
     }
 
     /// Find min l < r which satisfy f(a[l], a[l + 1], ..., a[r - 1]) or l = r if no such l exist.
+    ///
     /// f(T::identity()) == true must be held.
+    ///
     /// Time complexity is O(log^2N).
     pub fn min_left<F>(&self, r: usize, mut f: F) -> usize
     where
