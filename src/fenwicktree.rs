@@ -163,6 +163,7 @@ impl<T: CommutativeMonoid> From<Vec<T::S>> for FenwickTree<T> {
 }
 
 impl<T: CommutativeMonoid> FenwickTree<T> {
+    /// Construct a new `FenwickTree` with size `n`.
     pub fn new(n: usize) -> Self {
         Self {
             node: vec![T::identity(); n + 1],
@@ -170,11 +171,12 @@ impl<T: CommutativeMonoid> FenwickTree<T> {
         }
     }
 
+    /// Returns a size of `FenwickTree`.
     pub fn len(&self) -> usize {
         self.n
     }
 
-    /// a[p] = operate(a[p], value)
+    /// Perform `a[p] = operate(a[p], value)`.
     pub fn update(&mut self, p: usize, value: T::S) {
         let p = p + 1; // 0-index to 1-index
         let ps = successors(Some(p), |&p| Some(p + lsb(p))).take_while(|&p| p <= self.n);
@@ -183,7 +185,7 @@ impl<T: CommutativeMonoid> FenwickTree<T> {
         }
     }
 
-    /// operate(a[0], a[1], ..., a[p-1])
+    /// Returns `operate(a[0], a[1], ..., a[p-1])`.
     pub fn prefix(&self, p: usize) -> T::S {
         let ps = successors(Some(p), |&p| Some(p - lsb(p))).take_while(|&p| p > 0);
         let mut res = T::identity();
@@ -193,9 +195,9 @@ impl<T: CommutativeMonoid> FenwickTree<T> {
         res
     }
 
-    /// Find max p which satisfy f(a[0], a[1], ..., a[p - 1]) or p = 0 if no such p exist.
+    /// Find max `p` which satisfy `f(a[0], a[1], ..., a[p - 1])` or `p = 0` if no such `p` exist.
     ///
-    /// f(T::identity()) == true must be held.
+    /// `f(T::identity()) == true` must be held.
     ///
     /// Time complexity is O(log^2N).
     pub fn max_right<F: FnMut(T::S) -> bool>(&self, mut f: F) -> usize {

@@ -95,7 +95,7 @@ impl<T: MapMonoid> LazySegtree<T> {
         self.n
     }
 
-    /// Returns a[p].
+    /// Returns `a[p]`.
     ///
     /// Time complexity is O(logn).
     pub fn get(&mut self, p: usize) -> &<T::S as Monoid>::S {
@@ -105,7 +105,7 @@ impl<T: MapMonoid> LazySegtree<T> {
         &self.node[p]
     }
 
-    /// a[p] = value.
+    /// Perform `a[p] = value`.
     ///
     /// Time complexity is O(logn).
     pub fn set(&mut self, p: usize, value: <T::S as Monoid>::S) {
@@ -118,7 +118,7 @@ impl<T: MapMonoid> LazySegtree<T> {
         }
     }
 
-    /// Perform a[range] <= f(a[range]).
+    /// Perform `a[range] <= f(a[range])`.
     ///
     /// Time complexity is O(logn).
     pub fn apply<R: RangeBounds<usize>>(&mut self, range: R, f: T::F) {
@@ -155,7 +155,7 @@ impl<T: MapMonoid> LazySegtree<T> {
         }
     }
 
-    /// Calculate operate(a[range]).
+    /// Calculate `operate(a[range])`.
     ///
     /// Time complexity is O(logn).
     pub fn query<R: RangeBounds<usize>>(&mut self, range: R) -> <T::S as Monoid>::S {
@@ -191,9 +191,9 @@ impl<T: MapMonoid> LazySegtree<T> {
         res
     }
 
-    /// Find max r > l which satisfy f(a[l], a[l + 1], ..., a[r - 1]) or r = l if no such r exist.
+    /// Find max `r > l` which satisfy `f(a[l], a[l + 1], ..., a[r - 1])` or `r = l` if no such `r` exist.
     ///
-    /// f(T::S::identity()) == true must be held.
+    /// `f(T::S::identity()) == true` must be held.
     ///
     /// Time complexity is O(log^2n).
     pub fn max_right<F>(&mut self, l: usize, mut f: F) -> usize
@@ -214,9 +214,9 @@ impl<T: MapMonoid> LazySegtree<T> {
         ok
     }
 
-    /// Find min l < r which satisfy f(a[l], a[l + 1], ..., a[r - 1]) or l = r if no such l exist.
+    /// Find min `l < r` which satisfy `f(a[l], a[l + 1], ..., a[r - 1])` or `l = r` if no such `l` exist.
     ///
-    /// f(T::S::identity()) == true must be held.
+    /// `f(T::S::identity()) == true` must be held.
     ///
     /// Time complexity is O(log^2n).
     pub fn min_left<F>(&mut self, r: usize, mut f: F) -> usize

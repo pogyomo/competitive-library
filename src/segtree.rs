@@ -193,7 +193,7 @@ impl<T: Monoid> Segtree<T> {
         self.n
     }
 
-    /// a[p] = value.
+    /// Perform `a[p] = value`.
     ///
     /// Time complexity is O(logn).
     pub fn set(&mut self, p: usize, value: T::S) {
@@ -206,14 +206,14 @@ impl<T: Monoid> Segtree<T> {
         }
     }
 
-    /// Returns a[p].
+    /// Returns `a[p]`.
     ///
     /// Time complexity is O(1).
     pub fn get(&self, p: usize) -> &T::S {
         &self.node[p + self.leaf_base()]
     }
 
-    /// Returns operate(a[range]).
+    /// Returns `operate(a[range])`.
     ///
     /// Time complexity is O(logn).
     pub fn query<R: RangeBounds<usize>>(&self, range: R) -> T::S {
@@ -244,9 +244,9 @@ impl<T: Monoid> Segtree<T> {
         T::operate(&lv, &rv)
     }
 
-    /// Find max r > l which satisfy f(a[l], a[l + 1], ..., a[r - 1]) or r = l if no such r exist.
+    /// Find max `r > l` which satisfy `f(a[l], a[l + 1], ..., a[r - 1])` or `r = l` if no such `r` exist.
     ///
-    /// f(T::identity()) == true must be held.
+    /// `f(T::identity()) == true` must be held.
     ///
     /// Time complexity is O(log^2N).
     pub fn max_right<F>(&self, l: usize, mut f: F) -> usize
@@ -267,9 +267,9 @@ impl<T: Monoid> Segtree<T> {
         ok
     }
 
-    /// Find min l < r which satisfy f(a[l], a[l + 1], ..., a[r - 1]) or l = r if no such l exist.
+    /// Find min `l < r` which satisfy `f(a[l], a[l + 1], ..., a[r - 1])` or `l = r` if no such `l` exist.
     ///
-    /// f(T::identity()) == true must be held.
+    /// `f(T::identity()) == true` must be held.
     ///
     /// Time complexity is O(log^2N).
     pub fn min_left<F>(&self, r: usize, mut f: F) -> usize
