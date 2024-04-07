@@ -1,4 +1,5 @@
 pub mod fenwicktree;
+pub mod graph;
 pub mod lazysegtree;
 pub mod math;
 pub mod multiset;
