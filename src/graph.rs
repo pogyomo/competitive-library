@@ -161,21 +161,21 @@ where
     where
         D: SingleSourceDistanceTable<Self::V, Self::W>,
     {
-        let vcount = self.vertex_count();
+        let n = self.vertex_count();
         let edges = self.edges();
         dist.set_distance(start, init);
-        for i in 0..vcount {
-            for (u, v, w) in edges.iter().cloned() {
+        for i in 0..n {
+            for (u, v, uvdist) in edges.iter().cloned() {
                 let Some(udist) = dist.distance(&u) else {
                     continue;
                 };
-                let next_vdist = udist.clone() + w;
+                let next_vdist = udist.clone() + uvdist;
                 if dist
                     .distance(&v)
                     .map(|vdist| next_vdist < *vdist)
                     .unwrap_or(true)
                 {
-                    if i == vcount - 1 {
+                    if i == n - 1 {
                         return None;
                     }
                     dist.set_distance(v, next_vdist);
