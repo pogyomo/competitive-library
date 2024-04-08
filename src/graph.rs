@@ -9,6 +9,7 @@ use std::{
 pub trait Graph {
     type V: Clone;
     type W: Clone;
+
     /// Collect all vertex of this graph.
     fn vertex(&self) -> Vec<Self::V>;
 
@@ -244,7 +245,10 @@ impl<G: Graph> WarshallFloyd for G where G::W: PartialOrd + Add<G::W, Output = G
 ///
 /// This trait is for switch data structure by target vertices type.
 pub trait AllPairDistanceTable<V, D> {
+    /// Get distance from `u` to `v`, or None if cannot go to `v` from `u`.
     fn distance(&self, u: &V, v: &V) -> Option<&D>;
+
+    /// Set the distance of path from `u` to `v`.
     fn set_distance(&mut self, u: V, v: V, d: D);
 }
 
@@ -312,7 +316,10 @@ impl<V: Ord, D> AllPairDistanceTable<V, D> for BTreeMap<V, BTreeMap<V, D>> {
 ///
 /// This trait is for switch data structure by target vertices type.
 pub trait SingleSourceDistanceTable<V, D> {
+    /// Get distance from a vertices to `v`, or None if cannot go to `v`.
     fn distance(&self, v: &V) -> Option<&D>;
+
+    /// Set distance of path to `v`.
     fn set_distance(&mut self, v: V, d: D);
 }
 
