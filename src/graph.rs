@@ -442,6 +442,7 @@ mod test {
 
     #[test]
     fn test_warshall_floyd_with_negative_cycle() {
+        // test case come from https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=GRL_1_C
         let graph: Vec<Vec<(usize, i64)>> = vec![
             vec![(1, 1), (2, 5)],
             vec![(2, 2), (3, 4)],
