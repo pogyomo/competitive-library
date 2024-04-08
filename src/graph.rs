@@ -7,14 +7,43 @@ use std::{
 
 /// A trait represent directed/undirected graph with/without weight.
 pub trait Graph {
-    type V;
-    type W;
+    type V: Clone;
+    type W: Clone;
+    /// Collect all vertex of this graph.
+    fn vertex(&self) -> Vec<Self::V>;
+
+    /// Returns number of vertex in this graph.
+    fn vertex_count(&self) -> usize;
+
+    /// Collect all childs of specified vertices.
     fn childs(&self, v: Self::V) -> Vec<(Self::V, Self::W)>;
+
+    /// Collect all edges of this graph.
+    ///
+    /// By default, this call `childs` for all vertex gained from `vertex`
+    /// to collect all edges.
+    /// User should override default implementation if the number of vertex is large but the number
+    /// of edge is small.
+    fn edges(&self) -> Vec<(Self::V, Self::V, Self::W)> {
+        let mut res = Vec::new();
+        for u in self.vertex() {
+            for (v, w) in self.childs(u.clone()) {
+                res.push((u.clone(), v, w));
+            }
+        }
+        res
+    }
 }
 
 impl Graph for Vec<Vec<usize>> {
     type V = usize;
     type W = ();
+    fn vertex(&self) -> Vec<Self::V> {
+        (0..self.len()).collect()
+    }
+    fn vertex_count(&self) -> usize {
+        self.len()
+    }
     fn childs(&self, v: Self::V) -> Vec<(Self::V, Self::W)> {
         self[v].iter().copied().map(|v| (v, ())).collect()
     }
@@ -23,53 +52,20 @@ impl Graph for Vec<Vec<usize>> {
 impl<W: Clone> Graph for Vec<Vec<(usize, W)>> {
     type V = usize;
     type W = W;
+    fn vertex(&self) -> Vec<Self::V> {
+        (0..self.len()).collect()
+    }
+    fn vertex_count(&self) -> usize {
+        self.len()
+    }
     fn childs(&self, v: Self::V) -> Vec<(Self::V, Self::W)> {
         self[v].clone()
     }
 }
 
-impl<V: Clone + Hash + Eq> Graph for HashMap<V, Vec<V>> {
-    type V = V;
-    type W = ();
-    fn childs(&self, v: Self::V) -> Vec<(Self::V, Self::W)> {
-        self.get(&v)
-            .map(|vs| vs.into_iter().cloned().map(|v| (v, ())).collect())
-            .unwrap_or(Vec::new())
-    }
-}
-
-impl<V: Clone + Hash + Eq, W: Clone> Graph for HashMap<V, Vec<(V, W)>> {
-    type V = V;
-    type W = W;
-    fn childs(&self, v: Self::V) -> Vec<(Self::V, Self::W)> {
-        self.get(&v).map(|vs| vs.clone()).unwrap_or(Vec::new())
-    }
-}
-
-impl<V: Clone + Ord> Graph for BTreeMap<V, Vec<V>> {
-    type V = V;
-    type W = ();
-    fn childs(&self, v: Self::V) -> Vec<(Self::V, Self::W)> {
-        self.get(&v)
-            .map(|vs| vs.into_iter().cloned().map(|v| (v, ())).collect())
-            .unwrap_or(Vec::new())
-    }
-}
-
-impl<V: Clone + Ord, W: Clone> Graph for BTreeMap<V, Vec<(V, W)>> {
-    type V = V;
-    type W = W;
-    fn childs(&self, v: Self::V) -> Vec<(Self::V, Self::W)> {
-        self.get(&v).map(|vs| vs.clone()).unwrap_or(Vec::new())
-    }
-}
-
-/// A trait to calculate single source shortest path distance of a graph by considering all vertex
-/// distance is 1.
-pub trait BFS: Graph
-where
-    Self::V: Clone,
-{
+/// An extension trait to add `bfs` to travel the graph and report if the vertices is visitable
+/// from specified vertices.
+pub trait BFS: Graph {
     /// Calculate minimum number of edge in path from `start` to all vertex.
     ///
     /// `dist` must be initialized to None for all vertex.
@@ -94,13 +90,14 @@ where
     }
 }
 
-impl<G: Graph> BFS for G where G::V: Clone {}
+impl<G: Graph> BFS for G {}
 
-/// A trait to calculate single source shortest path distance of a graph.
+/// An extension trait to add `dijkstra` which calculate single shortest path distance with
+/// of the graph.
 pub trait Dijkstra: Graph
 where
-    Self::V: Ord + Clone,
-    Self::W: Ord + Clone + Add<Self::W, Output = Self::W>,
+    Self::V: Ord,
+    Self::W: Ord + Add<Self::W, Output = Self::W>,
 {
     /// Calculate shortest path distance from `start` to all vertex.
     ///
@@ -133,12 +130,58 @@ where
 
 impl<G: Graph> Dijkstra for G
 where
-    G::V: Ord + Clone,
-    G::W: Ord + Clone + Add<G::W, Output = G::W>,
+    G::V: Ord,
+    G::W: Ord + Add<G::W, Output = G::W>,
 {
 }
 
-/// A trait to hold distance to any vertices.
+/// An extension trait to add `bellman_ford` which calculate single shortest path distance with
+/// of the graph.
+pub trait BellmanFord: Graph
+where
+    Self::W: PartialOrd + Add<Self::W, Output = Self::W>,
+{
+    /// Calculate shortest path distance from `start` to all vertex.
+    ///
+    /// This works even if this graph contains negative edge weight and
+    /// if the graph contains negative cycle, return None.
+    ///
+    /// `dist` must be initialized to None for all vertex.
+    ///
+    /// Time complexity is O(VE).
+    fn bellman_ford<D>(&self, start: Self::V, init: Self::W, mut dist: D) -> Option<D>
+    where
+        D: SingleSourceDistanceTable<Self::V, Self::W>,
+    {
+        // TODO: test if the algorithm is correct
+        let vcount = self.vertex_count();
+        let edges = self.edges();
+        dist.set_distance(start, init);
+        for i in 0..vcount {
+            for (u, v, w) in edges.iter().cloned() {
+                let Some(udist) = dist.distance(&u) else {
+                    continue;
+                };
+                let next_vdist = udist.clone() + w;
+                if dist
+                    .distance(&v)
+                    .map(|vdist| next_vdist < *vdist)
+                    .unwrap_or(true)
+                {
+                    if i == vcount - 1 {
+                        return None;
+                    }
+                    dist.set_distance(v, next_vdist);
+                }
+            }
+        }
+        Some(dist)
+    }
+}
+
+impl<G: Graph> BellmanFord for G where G::W: PartialOrd + Add<G::W, Output = G::W> {}
+
+/// A trait to hold distance from a vertices to any vertices.
 ///
 /// This trait is for switch data structure by target vertices type.
 pub trait SingleSourceDistanceTable<V, D> {
@@ -188,7 +231,7 @@ impl<V: Ord, D> SingleSourceDistanceTable<V, D> for BTreeMap<V, D> {
 
 #[cfg(test)]
 mod test {
-    use super::{Dijkstra, BFS};
+    use super::{BellmanFord, Dijkstra, BFS};
 
     #[test]
     fn test_bfs() {
@@ -213,5 +256,32 @@ mod test {
             graph.dijkstra(0, 0, vec![None; 4]),
             vec![Some(0), Some(1), Some(3), Some(4)]
         );
+    }
+
+    #[test]
+    fn test_bellman_ford() {
+        // test case come from https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=GRL_1_B
+        let graph: Vec<Vec<(usize, i64)>> = vec![
+            vec![(1, 2), (2, 3)],
+            vec![(2, -5), (3, 1)],
+            vec![(3, 2)],
+            vec![],
+        ];
+        assert_eq!(
+            graph.bellman_ford(0, 0, vec![None; 4]),
+            Some(vec![Some(0), Some(2), Some(-3), Some(-1)])
+        );
+    }
+
+    #[test]
+    fn test_bellman_ford_with_negative_cycle() {
+        // test case come from https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=GRL_1_B
+        let graph: Vec<Vec<(usize, i64)>> = vec![
+            vec![(1, 2), (2, 3)],
+            vec![(2, -5), (3, 1)],
+            vec![(3, 2)],
+            vec![(1, 0)],
+        ];
+        assert_eq!(graph.bellman_ford(0, 0, vec![None; 4]), None);
     }
 }
