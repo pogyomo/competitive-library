@@ -181,7 +181,7 @@ where
 
 impl<G: Graph> BellmanFord for G where G::W: PartialOrd + Add<G::W, Output = G::W> {}
 
-/// An extension trait to add `bellman_ford` which calculate all pair shortest path distance
+/// An extension trait to add `warshall_floyd` which calculate all pair shortest path distance
 /// of the graph.
 pub trait WarshallFloyd: Graph
 where
