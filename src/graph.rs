@@ -22,8 +22,8 @@ pub trait Graph {
     ///
     /// By default, this call `childs` for all vertex gained from `vertex`
     /// to collect all edges.
-    /// User should override default implementation if the number of vertex is large but the number
-    /// of edge is small.
+    ///
+    /// User should override default implementation if it is possible to return all edges directly.
     fn edges(&self) -> Vec<(Self::V, Self::V, Self::W)> {
         let mut res = Vec::new();
         for u in self.vertex() {
@@ -153,7 +153,6 @@ where
     where
         D: SingleSourceDistanceTable<Self::V, Self::W>,
     {
-        // TODO: test if the algorithm is correct
         let vcount = self.vertex_count();
         let edges = self.edges();
         dist.set_distance(start, init);
@@ -279,6 +278,16 @@ impl<V: Hash + Eq + Clone, D> AllPairDistanceTable<V, D> for HashMap<(V, V), D> 
     }
 }
 
+impl<V: Hash + Eq, D> AllPairDistanceTable<V, D> for HashMap<V, HashMap<V, D>> {
+    fn distance(&self, u: &V, v: &V) -> Option<&D> {
+        self.get(u)?.get(v)
+    }
+
+    fn set_distance(&mut self, u: V, v: V, d: D) {
+        self.entry(u).or_default().insert(v, d);
+    }
+}
+
 impl<V: Ord + Clone, D> AllPairDistanceTable<V, D> for BTreeMap<(V, V), D> {
     fn distance(&self, u: &V, v: &V) -> Option<&D> {
         self.get(&(u.clone(), v.clone()))
@@ -286,6 +295,16 @@ impl<V: Ord + Clone, D> AllPairDistanceTable<V, D> for BTreeMap<(V, V), D> {
 
     fn set_distance(&mut self, u: V, v: V, d: D) {
         self.insert((u, v), d);
+    }
+}
+
+impl<V: Ord, D> AllPairDistanceTable<V, D> for BTreeMap<V, BTreeMap<V, D>> {
+    fn distance(&self, u: &V, v: &V) -> Option<&D> {
+        self.get(u)?.get(v)
+    }
+
+    fn set_distance(&mut self, u: V, v: V, d: D) {
+        self.entry(u).or_default().insert(v, d);
     }
 }
 
