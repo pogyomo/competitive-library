@@ -21,6 +21,20 @@ impl<V, W> Edge<V, W> {
     }
 }
 
+/// A struct which represent an adjacent vertex.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Adjacent<V, W> {
+    pub to: V,
+    pub cost: W,
+}
+
+impl<V, W> Adjacent<V, W> {
+    /// Construct a new `Adjacent` object.
+    pub fn new(to: V, cost: W) -> Self {
+        Self { to, cost }
+    }
+}
+
 /// A trait represent directed/undirected graph with/without weight.
 pub trait Graph {
     type V: Clone;
@@ -39,8 +53,8 @@ pub trait Graph {
         self.vertices().len()
     }
 
-    /// Collect all childs of specified vertex.
-    fn childs(&self, v: Self::V) -> Cow<'_, Vec<(Self::V, Self::W)>>;
+    /// Collect all adjacents of specified vertex.
+    fn adjacents(&self, v: Self::V) -> Cow<'_, Vec<Adjacent<Self::V, Self::W>>>;
 
     /// Collect all edges of this graph.
     ///
@@ -51,7 +65,7 @@ pub trait Graph {
     fn edges(&self) -> Cow<'_, Vec<Edge<Self::V, Self::W>>> {
         let mut res = Vec::new();
         for u in self.vertices().iter() {
-            for (v, w) in self.childs(u.clone()).iter().cloned() {
+            for Adjacent { to: v, cost: w } in self.adjacents(u.clone()).iter().cloned() {
                 res.push(Edge::new(u.clone(), v, w));
             }
         }
@@ -71,8 +85,14 @@ impl Graph for Vec<Vec<usize>> {
         self.len()
     }
 
-    fn childs(&self, v: Self::V) -> Cow<'_, Vec<(Self::V, Self::W)>> {
-        Cow::Owned(self[v].iter().cloned().map(|v| (v, ())).collect())
+    fn adjacents(&self, v: Self::V) -> Cow<'_, Vec<Adjacent<Self::V, ()>>> {
+        Cow::Owned(
+            self[v]
+                .iter()
+                .cloned()
+                .map(|v| Adjacent::new(v, ()))
+                .collect(),
+        )
     }
 }
 
@@ -88,7 +108,30 @@ impl<W: Clone> Graph for Vec<Vec<(usize, W)>> {
         self.len()
     }
 
-    fn childs(&self, v: Self::V) -> Cow<'_, Vec<(Self::V, Self::W)>> {
+    fn adjacents(&self, v: Self::V) -> Cow<'_, Vec<Adjacent<Self::V, Self::W>>> {
+        Cow::Owned(
+            self[v]
+                .iter()
+                .cloned()
+                .map(|(v, w)| Adjacent::new(v, w))
+                .collect(),
+        )
+    }
+}
+
+impl<W: Clone> Graph for Vec<Vec<Adjacent<usize, W>>> {
+    type V = usize;
+    type W = W;
+
+    fn vertices(&self) -> Cow<'_, Vec<Self::V>> {
+        Cow::Owned((0..self.len()).collect())
+    }
+
+    fn vertex_count(&self) -> usize {
+        self.len()
+    }
+
+    fn adjacents(&self, v: Self::V) -> Cow<'_, Vec<Adjacent<Self::V, Self::W>>> {
         Cow::Borrowed(&self[v])
     }
 }
@@ -109,7 +152,7 @@ pub trait BFS: Graph {
         queue.push_back(start.clone());
         dist.set_distance(start, 0);
         while let Some(u) = queue.pop_front() {
-            for (v, _) in self.childs(u.clone()).iter() {
+            for Adjacent { to: v, .. } in self.adjacents(u.clone()).iter() {
                 if dist.distance(v).is_none() {
                     dist.set_distance(v.clone(), dist.distance(&u).unwrap() + 1);
                     queue.push_back(v.clone());
@@ -145,7 +188,11 @@ where
             if dist.distance(&u).map(|d| *d < udist).unwrap_or(false) {
                 continue;
             }
-            for (v, uvdist) in self.childs(u).iter().cloned() {
+            for Adjacent {
+                to: v,
+                cost: uvdist,
+            } in self.adjacents(u).iter().cloned()
+            {
                 let vdist = udist.clone() + uvdist;
                 if dist.distance(&v).map(|d| *d < vdist).unwrap_or(false) {
                     continue;
@@ -187,8 +234,12 @@ where
         let edges = self.edges();
         dist.set_distance(start, init);
         for i in 0..n {
-            for Edge { from, to, cost } in edges.iter() {
-                let (u, v, uvdist) = (from, to, cost);
+            for Edge {
+                from: u,
+                to: v,
+                cost: uvdist,
+            } in edges.iter()
+            {
                 let Some(udist) = dist.distance(u) else {
                     continue;
                 };
@@ -234,7 +285,7 @@ where
     {
         let vs = self.vertices();
         for i in vs.iter().cloned() {
-            for (j, w) in self.childs(i.clone()).iter().cloned() {
+            for Adjacent { to: j, cost: w } in self.adjacents(i.clone()).iter().cloned() {
                 dist.set_distance(i.clone(), j, w);
             }
             dist.set_distance(i.clone(), i, init.clone());
