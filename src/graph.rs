@@ -14,7 +14,14 @@ pub trait Graph {
     fn vertex(&self) -> Vec<Self::V>;
 
     /// Returns number of vertex in this graph.
-    fn vertex_count(&self) -> usize;
+    ///
+    /// By default, this call `vertex` and count the size of vector.
+    ///
+    /// User should override default implementation if it is possible to return the number of
+    /// vertex directly.
+    fn vertex_count(&self) -> usize {
+        self.vertex().len()
+    }
 
     /// Collect all childs of specified vertices.
     fn childs(&self, v: Self::V) -> Vec<(Self::V, Self::W)>;
