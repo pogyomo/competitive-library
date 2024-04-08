@@ -62,12 +62,15 @@ pub trait Graph {
 impl Graph for Vec<Vec<usize>> {
     type V = usize;
     type W = ();
+
     fn vertex(&self) -> Cow<'_, Vec<Self::V>> {
         Cow::Owned((0..self.len()).collect())
     }
+
     fn vertex_count(&self) -> usize {
         self.len()
     }
+
     fn childs(&self, v: Self::V) -> Cow<'_, Vec<(Self::V, Self::W)>> {
         Cow::Owned(self[v].iter().cloned().map(|v| (v, ())).collect())
     }
@@ -76,12 +79,15 @@ impl Graph for Vec<Vec<usize>> {
 impl<W: Clone> Graph for Vec<Vec<(usize, W)>> {
     type V = usize;
     type W = W;
+
     fn vertex(&self) -> Cow<'_, Vec<Self::V>> {
         Cow::Owned((0..self.len()).collect())
     }
+
     fn vertex_count(&self) -> usize {
         self.len()
     }
+
     fn childs(&self, v: Self::V) -> Cow<'_, Vec<(Self::V, Self::W)>> {
         Cow::Borrowed(&self[v])
     }
