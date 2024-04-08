@@ -92,7 +92,7 @@ pub trait BFS: Graph {
 
 impl<G: Graph> BFS for G {}
 
-/// An extension trait to add `dijkstra` which calculate single shortest path distance with
+/// An extension trait to add `dijkstra` which calculate single shortest path distance
 /// of the graph.
 pub trait Dijkstra: Graph
 where
@@ -135,7 +135,7 @@ where
 {
 }
 
-/// An extension trait to add `bellman_ford` which calculate single shortest path distance with
+/// An extension trait to add `bellman_ford` which calculate single shortest path distance
 /// of the graph.
 pub trait BellmanFord: Graph
 where
@@ -180,6 +180,114 @@ where
 }
 
 impl<G: Graph> BellmanFord for G where G::W: PartialOrd + Add<G::W, Output = G::W> {}
+
+/// An extension trait to add `bellman_ford` which calculate all pair shortest path distance
+/// of the graph.
+pub trait WarshallFloyd: Graph
+where
+    Self::W: PartialOrd + Add<Self::W, Output = Self::W>,
+{
+    /// Calculate shortest path distance of all vertices-vertices pair.
+    ///
+    /// This works even if this graph contains negative edge weight and
+    /// if the graph contains negative cycle, return None.
+    ///
+    /// `dist` must be initialized to None for all vertex.
+    ///
+    /// `is_negative` must return true if given weight is negative.
+    ///
+    /// Time complexity is O(V^3).
+    fn warshall_floyd<D, F>(&self, init: Self::W, mut dist: D, mut is_negative: F) -> Option<D>
+    where
+        D: AllPairDistanceTable<Self::V, Self::W>,
+        F: FnMut(&Self::W) -> bool,
+    {
+        let vs = self.vertex();
+        for i in vs.iter().cloned() {
+            for (j, w) in self.childs(i.clone()) {
+                dist.set_distance(i.clone(), j, w);
+            }
+            dist.set_distance(i.clone(), i, init.clone());
+        }
+        for k in vs.iter().cloned() {
+            for i in vs.iter().cloned() {
+                for j in vs.iter().cloned() {
+                    let (Some(dik), Some(dkj)) = (dist.distance(&i, &k), dist.distance(&k, &j))
+                    else {
+                        continue;
+                    };
+                    let new_dij = dik.clone() + dkj.clone();
+                    if dist
+                        .distance(&i, &j)
+                        .map(|dij| *dij > new_dij)
+                        .unwrap_or(true)
+                    {
+                        dist.set_distance(i.clone(), j, new_dij);
+                    }
+                }
+            }
+        }
+        for i in vs {
+            let Some(dii) = dist.distance(&i, &i) else {
+                continue;
+            };
+            if is_negative(&dii) {
+                return None;
+            }
+        }
+        Some(dist)
+    }
+}
+
+impl<G: Graph> WarshallFloyd for G where G::W: PartialOrd + Add<G::W, Output = G::W> {}
+
+/// A trait to hold distance from any vertices to any vertices.
+///
+/// This trait is for switch data structure by target vertices type.
+pub trait AllPairDistanceTable<V, D> {
+    fn distance(&self, u: &V, v: &V) -> Option<&D>;
+    fn set_distance(&mut self, u: V, v: V, d: D);
+}
+
+impl<D> AllPairDistanceTable<usize, D> for Vec<Vec<Option<D>>> {
+    fn distance(&self, u: &usize, v: &usize) -> Option<&D> {
+        self[*u][*v].as_ref()
+    }
+
+    fn set_distance(&mut self, u: usize, v: usize, d: D) {
+        self[u][v] = Some(d);
+    }
+}
+
+impl<D> AllPairDistanceTable<(usize, usize), D> for Vec<Vec<Vec<Vec<Option<D>>>>> {
+    fn distance(&self, u: &(usize, usize), v: &(usize, usize)) -> Option<&D> {
+        self[u.0][u.1][v.0][v.1].as_ref()
+    }
+
+    fn set_distance(&mut self, u: (usize, usize), v: (usize, usize), d: D) {
+        self[u.0][u.1][v.0][v.1] = Some(d);
+    }
+}
+
+impl<V: Hash + Eq + Clone, D> AllPairDistanceTable<V, D> for HashMap<(V, V), D> {
+    fn distance(&self, u: &V, v: &V) -> Option<&D> {
+        self.get(&(u.clone(), v.clone()))
+    }
+
+    fn set_distance(&mut self, u: V, v: V, d: D) {
+        self.insert((u, v), d);
+    }
+}
+
+impl<V: Ord + Clone, D> AllPairDistanceTable<V, D> for BTreeMap<(V, V), D> {
+    fn distance(&self, u: &V, v: &V) -> Option<&D> {
+        self.get(&(u.clone(), v.clone()))
+    }
+
+    fn set_distance(&mut self, u: V, v: V, d: D) {
+        self.insert((u, v), d);
+    }
+}
 
 /// A trait to hold distance from a vertices to any vertices.
 ///
@@ -231,7 +339,7 @@ impl<V: Ord, D> SingleSourceDistanceTable<V, D> for BTreeMap<V, D> {
 
 #[cfg(test)]
 mod test {
-    use super::{BellmanFord, Dijkstra, BFS};
+    use super::{BellmanFord, Dijkstra, WarshallFloyd, BFS};
 
     #[test]
     fn test_bfs() {
@@ -283,5 +391,40 @@ mod test {
             vec![(1, 0)],
         ];
         assert_eq!(graph.bellman_ford(0, 0, vec![None; 4]), None);
+    }
+
+    #[test]
+    fn test_warshall_floyd() {
+        // test case come from https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=GRL_1_C
+        let graph: Vec<Vec<(usize, i64)>> = vec![
+            vec![(1, 1), (2, 5)],
+            vec![(2, 2), (3, 4)],
+            vec![(3, 1)],
+            vec![(2, 7)],
+        ];
+        let dist = graph.warshall_floyd(0, vec![vec![None; 4]; 4], |w| *w < 0);
+        assert_eq!(
+            dist,
+            Some(vec![
+                vec![Some(0), Some(1), Some(3), Some(4)],
+                vec![None, Some(0), Some(2), Some(3)],
+                vec![None, None, Some(0), Some(1)],
+                vec![None, None, Some(7), Some(0)],
+            ])
+        );
+    }
+
+    #[test]
+    fn test_warshall_floyd_with_negative_cycle() {
+        let graph: Vec<Vec<(usize, i64)>> = vec![
+            vec![(1, 1), (2, 5)],
+            vec![(2, 2), (3, 4)],
+            vec![(3, 1)],
+            vec![(2, -7)],
+        ];
+        assert_eq!(
+            graph.warshall_floyd(0, vec![vec![None; 4]; 4], |w| *w < 0),
+            None
+        );
     }
 }
