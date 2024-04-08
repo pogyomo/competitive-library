@@ -136,6 +136,49 @@ impl<W: Clone> Graph for Vec<Vec<Adjacent<usize, W>>> {
     }
 }
 
+/// A simple adjacent list that can append edges at runtime.
+pub struct SimpleAdjacentList<W> {
+    vs: Vec<usize>,
+    adjs: Vec<Vec<Adjacent<usize, W>>>,
+    edges: Vec<Edge<usize, W>>,
+}
+
+impl<W: Clone> SimpleAdjacentList<W> {
+    pub fn new(n: usize) -> Self {
+        Self {
+            vs: (0..n).collect(),
+            adjs: vec![Vec::new(); n],
+            edges: Vec::new(),
+        }
+    }
+
+    pub fn add_edge(&mut self, edge: Edge<usize, W>) {
+        self.adjs[edge.from].push(Adjacent::new(edge.to, edge.cost.clone()));
+        self.edges.push(edge);
+    }
+}
+
+impl<W: Clone> Graph for SimpleAdjacentList<W> {
+    type V = usize;
+    type W = W;
+
+    fn vertices(&self) -> Cow<'_, Vec<Self::V>> {
+        Cow::Borrowed(&self.vs)
+    }
+
+    fn vertex_count(&self) -> usize {
+        self.adjs.len()
+    }
+
+    fn adjacents(&self, v: Self::V) -> Cow<'_, Vec<Adjacent<Self::V, Self::W>>> {
+        Cow::Borrowed(&self.adjs[v])
+    }
+
+    fn edges(&self) -> Cow<'_, Vec<Edge<Self::V, Self::W>>> {
+        Cow::Borrowed(&self.edges)
+    }
+}
+
 /// An extension trait to add `bfs` to travel the graph and report if the vertex is visitable
 /// from specified vertex.
 pub trait BFS: Graph {
