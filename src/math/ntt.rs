@@ -104,7 +104,7 @@ impl NTT {
     ///
     /// Time complexity is O(nlogn).
     pub fn convolution(&self, mut a: Vec<u64>, mut b: Vec<u64>) -> Vec<u64> {
-        if a.len() == 0 || b.len() == 0 {
+        if a.is_empty() || b.is_empty() {
             return Vec::new();
         }
 

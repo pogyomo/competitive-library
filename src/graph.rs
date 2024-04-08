@@ -209,20 +209,19 @@ where
             }
             dist.set_distance(i.clone(), i, init.clone());
         }
-        for k in vs.iter().cloned() {
-            for i in vs.iter().cloned() {
-                for j in vs.iter().cloned() {
-                    let (Some(dik), Some(dkj)) = (dist.distance(&i, &k), dist.distance(&k, &j))
-                    else {
+        for k in vs.iter() {
+            for i in vs.iter() {
+                for j in vs.iter() {
+                    let (Some(dik), Some(dkj)) = (dist.distance(i, k), dist.distance(k, j)) else {
                         continue;
                     };
                     let new_dij = dik.clone() + dkj.clone();
                     if dist
-                        .distance(&i, &j)
+                        .distance(i, j)
                         .map(|dij| *dij > new_dij)
                         .unwrap_or(true)
                     {
-                        dist.set_distance(i.clone(), j, new_dij);
+                        dist.set_distance(i.clone(), j.clone(), new_dij);
                     }
                 }
             }
@@ -231,7 +230,7 @@ where
             let Some(dii) = dist.distance(&i, &i) else {
                 continue;
             };
-            if is_negative(&dii) {
+            if is_negative(dii) {
                 return None;
             }
         }

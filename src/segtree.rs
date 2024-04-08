@@ -189,8 +189,17 @@ impl<T: Monoid> Segtree<T> {
     }
 
     /// Returns the size of `Segtree`.
+    ///
+    /// Time complexity is O(1).
     pub fn len(&self) -> usize {
         self.n
+    }
+
+    /// Returns `true` if this length is 0.
+    ///
+    /// Time complexity is O(1).
+    pub fn is_empty(&self) -> bool {
+        self.n == 0
     }
 
     /// Perform `a[p] = value`.
@@ -284,7 +293,7 @@ impl<T: Monoid> Segtree<T> {
         let mut ok = r;
         while ok - ng > 1 {
             let mid = (ok + ng) / 2;
-            if f(self.query(mid as usize..r)) {
+            if f(self.query(mid..r)) {
                 ok = mid;
             } else {
                 ng = mid;

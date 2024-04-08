@@ -172,11 +172,22 @@ impl<T: CommutativeMonoid> FenwickTree<T> {
     }
 
     /// Returns a size of `FenwickTree`.
+    ///
+    /// Time complexity is O(1).
     pub fn len(&self) -> usize {
         self.n
     }
 
+    /// Returns `true` if this length is 0.
+    ///
+    /// Time complexity is O(1).
+    pub fn is_empty(&self) -> bool {
+        self.n == 0
+    }
+
     /// Perform `a[p] = operate(a[p], value)`.
+    ///
+    /// Time complexity is O(logn).
     pub fn update(&mut self, p: usize, value: T::S) {
         let p = p + 1; // 0-index to 1-index
         let ps = successors(Some(p), |&p| Some(p + lsb(p))).take_while(|&p| p <= self.n);
@@ -186,6 +197,8 @@ impl<T: CommutativeMonoid> FenwickTree<T> {
     }
 
     /// Returns `operate(a[0], a[1], ..., a[p-1])`.
+    ///
+    /// Time complexity is O(logn).
     pub fn prefix(&self, p: usize) -> T::S {
         let ps = successors(Some(p), |&p| Some(p - lsb(p))).take_while(|&p| p > 0);
         let mut res = T::identity();

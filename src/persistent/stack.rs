@@ -9,6 +9,12 @@ pub struct PersistentStack<T> {
     head: Option<Rc<PersistentStackNode<T>>>,
 }
 
+impl<T> Default for PersistentStack<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T> PersistentStack<T> {
     pub fn new() -> Self {
         Self { head: None }
@@ -22,7 +28,7 @@ impl<T> PersistentStack<T> {
         Self {
             head: Some(Rc::new(PersistentStackNode {
                 value,
-                next: self.head.as_ref().map(|node| Rc::clone(node)),
+                next: self.head.as_ref().map(Rc::clone),
             })),
         }
     }
@@ -32,8 +38,7 @@ impl<T> PersistentStack<T> {
             head: self
                 .head
                 .as_ref()
-                .map(|node| node.next.as_ref().map(|node| Rc::clone(node)))
-                .flatten(),
+                .and_then(|node| node.next.as_ref().map(Rc::clone)),
         }
     }
 }

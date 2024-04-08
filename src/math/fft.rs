@@ -56,7 +56,7 @@ pub fn ifft<T: Float>(a: Vec<Complex<T>>) -> Vec<Complex<T>> {
 ///
 /// Time complexity is O(nlogn).
 pub fn convolution<T: Float>(mut a: Vec<T>, mut b: Vec<T>) -> Vec<T> {
-    if a.len() == 0 || b.len() == 0 {
+    if a.is_empty() || b.is_empty() {
         return Vec::new();
     }
 

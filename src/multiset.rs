@@ -27,6 +27,12 @@ impl<T: Ord> FromIterator<T> for Multiset<T> {
     }
 }
 
+impl<T> Default for Multiset<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T> Multiset<T> {
     /// Construct a new `Multiset`.
     pub fn new() -> Self {
@@ -94,6 +100,13 @@ impl<T> Multiset<T> {
     pub fn len(&self) -> usize {
         self.size
     }
+
+    /// Returns `true` if this set has no elements.
+    ///
+    /// Time complexity is O(1).
+    pub fn is_empty(&self) -> bool {
+        self.size == 0
+    }
 }
 
 pub struct Range<'a, T> {
@@ -142,15 +155,13 @@ impl<'a, T> Iterator for Range<'a, T> {
             if let Some((value, count)) = self.iter.next() {
                 self.front = Some(value);
                 self.front_count = *count;
+            } else if self.back_count != 0 {
+                self.front = self.back;
+                self.front_count = 1;
+                self.back_count -= 1;
             } else {
-                if self.back_count != 0 {
-                    self.front = self.back;
-                    self.front_count = 1;
-                    self.back_count -= 1;
-                } else {
-                    self.front = None;
-                    self.front_count = usize::MAX;
-                }
+                self.front = None;
+                self.front_count = usize::MAX;
             }
         }
         self.front_count = self.front_count.saturating_sub(1);
@@ -164,15 +175,13 @@ impl<'a, T> DoubleEndedIterator for Range<'a, T> {
             if let Some((value, count)) = self.iter.next_back() {
                 self.back = Some(value);
                 self.back_count = *count;
+            } else if self.front_count != 0 {
+                self.back = self.front;
+                self.back_count = 1;
+                self.front_count -= 1;
             } else {
-                if self.front_count != 0 {
-                    self.back = self.front;
-                    self.back_count = 1;
-                    self.front_count -= 1;
-                } else {
-                    self.back = None;
-                    self.back_count = usize::MAX;
-                }
+                self.back = None;
+                self.back_count = usize::MAX;
             }
         }
         self.back_count = self.back_count.saturating_sub(1);
