@@ -1,9 +1,25 @@
 use std::{
+    borrow::Cow,
     cmp::Reverse,
     collections::{BTreeMap, BinaryHeap, HashMap, VecDeque},
     hash::Hash,
     ops::Add,
 };
+
+/// A struct which represent a edge in graph.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Edge<V, W> {
+    pub from: V,
+    pub to: V,
+    pub cost: W,
+}
+
+impl<V, W> Edge<V, W> {
+    /// Construct a new `Edge` object.
+    pub fn new(from: V, to: V, cost: W) -> Self {
+        Self { from, to, cost }
+    }
+}
 
 /// A trait represent directed/undirected graph with/without weight.
 pub trait Graph {
@@ -11,7 +27,7 @@ pub trait Graph {
     type W: Clone;
 
     /// Collect all vertex of this graph.
-    fn vertex(&self) -> Vec<Self::V>;
+    fn vertex(&self) -> Cow<'_, Vec<Self::V>>;
 
     /// Returns number of vertex in this graph.
     ///
@@ -24,7 +40,7 @@ pub trait Graph {
     }
 
     /// Collect all childs of specified vertices.
-    fn childs(&self, v: Self::V) -> Vec<(Self::V, Self::W)>;
+    fn childs(&self, v: Self::V) -> Cow<'_, Vec<(Self::V, Self::W)>>;
 
     /// Collect all edges of this graph.
     ///
@@ -32,42 +48,42 @@ pub trait Graph {
     /// to collect all edges.
     ///
     /// User should override default implementation if it is possible to return all edges directly.
-    fn edges(&self) -> Vec<(Self::V, Self::V, Self::W)> {
+    fn edges(&self) -> Cow<'_, Vec<Edge<Self::V, Self::W>>> {
         let mut res = Vec::new();
-        for u in self.vertex() {
-            for (v, w) in self.childs(u.clone()) {
-                res.push((u.clone(), v, w));
+        for u in self.vertex().iter() {
+            for (v, w) in self.childs(u.clone()).iter().cloned() {
+                res.push(Edge::new(u.clone(), v, w));
             }
         }
-        res
+        Cow::Owned(res)
     }
 }
 
 impl Graph for Vec<Vec<usize>> {
     type V = usize;
     type W = ();
-    fn vertex(&self) -> Vec<Self::V> {
-        (0..self.len()).collect()
+    fn vertex(&self) -> Cow<'_, Vec<Self::V>> {
+        Cow::Owned((0..self.len()).collect())
     }
     fn vertex_count(&self) -> usize {
         self.len()
     }
-    fn childs(&self, v: Self::V) -> Vec<(Self::V, Self::W)> {
-        self[v].iter().copied().map(|v| (v, ())).collect()
+    fn childs(&self, v: Self::V) -> Cow<'_, Vec<(Self::V, Self::W)>> {
+        Cow::Owned(self[v].iter().cloned().map(|v| (v, ())).collect())
     }
 }
 
 impl<W: Clone> Graph for Vec<Vec<(usize, W)>> {
     type V = usize;
     type W = W;
-    fn vertex(&self) -> Vec<Self::V> {
-        (0..self.len()).collect()
+    fn vertex(&self) -> Cow<'_, Vec<Self::V>> {
+        Cow::Owned((0..self.len()).collect())
     }
     fn vertex_count(&self) -> usize {
         self.len()
     }
-    fn childs(&self, v: Self::V) -> Vec<(Self::V, Self::W)> {
-        self[v].clone()
+    fn childs(&self, v: Self::V) -> Cow<'_, Vec<(Self::V, Self::W)>> {
+        Cow::Borrowed(&self[v])
     }
 }
 
@@ -87,10 +103,10 @@ pub trait BFS: Graph {
         queue.push_back(start.clone());
         dist.set_distance(start, 0);
         while let Some(u) = queue.pop_front() {
-            for (v, _) in self.childs(u.clone()) {
-                if dist.distance(&v).is_none() {
+            for (v, _) in self.childs(u.clone()).iter() {
+                if dist.distance(v).is_none() {
                     dist.set_distance(v.clone(), dist.distance(&u).unwrap() + 1);
-                    queue.push_back(v);
+                    queue.push_back(v.clone());
                 }
             }
         }
@@ -123,7 +139,7 @@ where
             if dist.distance(&u).map(|d| *d < udist).unwrap_or(false) {
                 continue;
             }
-            for (v, uvdist) in self.childs(u) {
+            for (v, uvdist) in self.childs(u).iter().cloned() {
                 let vdist = udist.clone() + uvdist;
                 if dist.distance(&v).map(|d| *d < vdist).unwrap_or(false) {
                     continue;
@@ -165,20 +181,21 @@ where
         let edges = self.edges();
         dist.set_distance(start, init);
         for i in 0..n {
-            for (u, v, uvdist) in edges.iter().cloned() {
-                let Some(udist) = dist.distance(&u) else {
+            for Edge { from, to, cost } in edges.iter() {
+                let (u, v, uvdist) = (from, to, cost);
+                let Some(udist) = dist.distance(u) else {
                     continue;
                 };
-                let next_vdist = udist.clone() + uvdist;
+                let next_vdist = udist.clone() + uvdist.clone();
                 if dist
-                    .distance(&v)
+                    .distance(v)
                     .map(|vdist| next_vdist < *vdist)
                     .unwrap_or(true)
                 {
                     if i == n - 1 {
                         return None;
                     }
-                    dist.set_distance(v, next_vdist);
+                    dist.set_distance(v.clone(), next_vdist);
                 }
             }
         }
@@ -211,7 +228,7 @@ where
     {
         let vs = self.vertex();
         for i in vs.iter().cloned() {
-            for (j, w) in self.childs(i.clone()) {
+            for (j, w) in self.childs(i.clone()).iter().cloned() {
                 dist.set_distance(i.clone(), j, w);
             }
             dist.set_distance(i.clone(), i, init.clone());
@@ -233,8 +250,8 @@ where
                 }
             }
         }
-        for i in vs {
-            let Some(dii) = dist.distance(&i, &i) else {
+        for i in vs.iter() {
+            let Some(dii) = dist.distance(i, i) else {
                 continue;
             };
             if is_negative(dii) {
