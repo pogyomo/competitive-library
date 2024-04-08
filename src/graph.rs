@@ -77,7 +77,7 @@ where
     /// Time complexity is O(V + E).
     fn bfs<D>(&self, start: Self::V, mut dist: D) -> D
     where
-        D: DistanceTable<Self::V, usize>,
+        D: SingleSourceDistanceTable<Self::V, usize>,
     {
         let mut queue = VecDeque::new();
         queue.push_back(start.clone());
@@ -109,7 +109,7 @@ where
     /// Time complexity is O((E + V)logV).
     fn dijkstra<D>(&self, start: Self::V, init: Self::W, mut dist: D) -> D
     where
-        D: DistanceTable<Self::V, Self::W>,
+        D: SingleSourceDistanceTable<Self::V, Self::W>,
     {
         let mut pq = BinaryHeap::new();
         pq.push(Reverse((init.clone(), start.clone())));
@@ -141,12 +141,12 @@ where
 /// A trait to hold distance to any vertices.
 ///
 /// This trait is for switch data structure by target vertices type.
-pub trait DistanceTable<V, D> {
+pub trait SingleSourceDistanceTable<V, D> {
     fn distance(&self, v: &V) -> Option<&D>;
     fn set_distance(&mut self, v: V, d: D);
 }
 
-impl<D> DistanceTable<usize, D> for Vec<Option<D>> {
+impl<D> SingleSourceDistanceTable<usize, D> for Vec<Option<D>> {
     fn distance(&self, v: &usize) -> Option<&D> {
         self[*v].as_ref()
     }
@@ -156,7 +156,7 @@ impl<D> DistanceTable<usize, D> for Vec<Option<D>> {
     }
 }
 
-impl<D> DistanceTable<(usize, usize), D> for Vec<Vec<Option<D>>> {
+impl<D> SingleSourceDistanceTable<(usize, usize), D> for Vec<Vec<Option<D>>> {
     fn distance(&self, v: &(usize, usize)) -> Option<&D> {
         self[v.0][v.1].as_ref()
     }
@@ -166,7 +166,7 @@ impl<D> DistanceTable<(usize, usize), D> for Vec<Vec<Option<D>>> {
     }
 }
 
-impl<V: Hash + Eq, D> DistanceTable<V, D> for HashMap<V, D> {
+impl<V: Hash + Eq, D> SingleSourceDistanceTable<V, D> for HashMap<V, D> {
     fn distance(&self, v: &V) -> Option<&D> {
         self.get(v)
     }
@@ -176,7 +176,7 @@ impl<V: Hash + Eq, D> DistanceTable<V, D> for HashMap<V, D> {
     }
 }
 
-impl<V: Ord, D> DistanceTable<V, D> for BTreeMap<V, D> {
+impl<V: Ord, D> SingleSourceDistanceTable<V, D> for BTreeMap<V, D> {
     fn distance(&self, v: &V) -> Option<&D> {
         self.get(v)
     }
