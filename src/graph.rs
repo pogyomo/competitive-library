@@ -27,7 +27,7 @@ pub trait Graph {
     type W: Clone;
 
     /// Collect all vertex of this graph.
-    fn vertex(&self) -> Cow<'_, Vec<Self::V>>;
+    fn vertices(&self) -> Cow<'_, Vec<Self::V>>;
 
     /// Returns number of vertex in this graph.
     ///
@@ -36,10 +36,10 @@ pub trait Graph {
     /// User should override default implementation if it is possible to return the number of
     /// vertex directly.
     fn vertex_count(&self) -> usize {
-        self.vertex().len()
+        self.vertices().len()
     }
 
-    /// Collect all childs of specified vertices.
+    /// Collect all childs of specified vertex.
     fn childs(&self, v: Self::V) -> Cow<'_, Vec<(Self::V, Self::W)>>;
 
     /// Collect all edges of this graph.
@@ -50,7 +50,7 @@ pub trait Graph {
     /// User should override default implementation if it is possible to return all edges directly.
     fn edges(&self) -> Cow<'_, Vec<Edge<Self::V, Self::W>>> {
         let mut res = Vec::new();
-        for u in self.vertex().iter() {
+        for u in self.vertices().iter() {
             for (v, w) in self.childs(u.clone()).iter().cloned() {
                 res.push(Edge::new(u.clone(), v, w));
             }
@@ -63,7 +63,7 @@ impl Graph for Vec<Vec<usize>> {
     type V = usize;
     type W = ();
 
-    fn vertex(&self) -> Cow<'_, Vec<Self::V>> {
+    fn vertices(&self) -> Cow<'_, Vec<Self::V>> {
         Cow::Owned((0..self.len()).collect())
     }
 
@@ -80,7 +80,7 @@ impl<W: Clone> Graph for Vec<Vec<(usize, W)>> {
     type V = usize;
     type W = W;
 
-    fn vertex(&self) -> Cow<'_, Vec<Self::V>> {
+    fn vertices(&self) -> Cow<'_, Vec<Self::V>> {
         Cow::Owned((0..self.len()).collect())
     }
 
@@ -93,8 +93,8 @@ impl<W: Clone> Graph for Vec<Vec<(usize, W)>> {
     }
 }
 
-/// An extension trait to add `bfs` to travel the graph and report if the vertices is visitable
-/// from specified vertices.
+/// An extension trait to add `bfs` to travel the graph and report if the vertex is visitable
+/// from specified vertex.
 pub trait BFS: Graph {
     /// Calculate minimum number of edge in path from `start` to all vertex.
     ///
@@ -217,7 +217,7 @@ pub trait WarshallFloyd: Graph
 where
     Self::W: PartialOrd + Add<Self::W, Output = Self::W>,
 {
-    /// Calculate shortest path distance of all vertices-vertices pair.
+    /// Calculate shortest path distance of all vertex-vertex pair.
     ///
     /// This works even if this graph contains negative edge weight and
     /// if the graph contains negative cycle, return None.
@@ -232,7 +232,7 @@ where
         D: AllPairDistanceTable<Self::V, Self::W>,
         F: FnMut(&Self::W) -> bool,
     {
-        let vs = self.vertex();
+        let vs = self.vertices();
         for i in vs.iter().cloned() {
             for (j, w) in self.childs(i.clone()).iter().cloned() {
                 dist.set_distance(i.clone(), j, w);
@@ -270,9 +270,9 @@ where
 
 impl<G: Graph> WarshallFloyd for G where G::W: PartialOrd + Add<G::W, Output = G::W> {}
 
-/// A trait to hold distance from any vertices to any vertices.
+/// A trait to hold distance from any vertex to any vertex.
 ///
-/// This trait is for switch data structure by target vertices type.
+/// This trait is for switch data structure by target vertex type.
 pub trait AllPairDistanceTable<V, D> {
     /// Get distance from `u` to `v`, or None if cannot go to `v` from `u`.
     fn distance(&self, u: &V, v: &V) -> Option<&D>;
@@ -323,11 +323,11 @@ impl<V: Ord + Clone, D> AllPairDistanceTable<V, D> for BTreeMap<(V, V), D> {
     }
 }
 
-/// A trait to hold distance from a vertices to any vertices.
+/// A trait to hold distance from a vertexto any vertex.
 ///
-/// This trait is for switch data structure by target vertices type.
+/// This trait is for switch data structure by target vertex type.
 pub trait SingleSourceDistanceTable<V, D> {
-    /// Get distance from a vertices to `v`, or None if cannot go to `v`.
+    /// Get distance from a vertex to `v`, or None if cannot go to `v`.
     fn distance(&self, v: &V) -> Option<&D>;
 
     /// Set distance of path to `v`.
