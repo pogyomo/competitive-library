@@ -45,7 +45,7 @@ pub trait Graph {
 
     /// Returns number of vertex in this graph.
     ///
-    /// By default, this call `vertex` and count the size of vector.
+    /// By default, this call `vertices` and count the size of vector.
     ///
     /// User should override default implementation if it is possible to return the number of
     /// vertex directly.
@@ -58,7 +58,7 @@ pub trait Graph {
 
     /// Collect all edges of this graph.
     ///
-    /// By default, this call `childs` for all vertex gained from `vertex`
+    /// By default, this call `adjacents` for all vertex gained from `vertices`
     /// to collect all edges.
     ///
     /// User should override default implementation if it is possible to return all edges directly.
