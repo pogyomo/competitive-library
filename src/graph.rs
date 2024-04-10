@@ -4,136 +4,112 @@ use std::{
     collections::{BTreeMap, BinaryHeap, HashMap, VecDeque},
     hash::Hash,
     marker::PhantomData,
-    ops::{Add, Range},
-    slice::Iter,
+    ops::Add,
 };
 
-/// A struct which represent a edge in graph.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Edge<V, W> {
-    pub from: V,
-    pub to: V,
-    pub cost: W,
+/// A trait represent adjacent of a vertex.
+pub trait Adjacent<V, W> {
+    /// Returns adjacent vertex.
+    fn to(&self) -> &V;
+
+    /// Returns cost to go to the adjacent vertex.
+    fn cost(&self) -> &W;
 }
 
-impl<V, W> Edge<V, W> {
-    /// Construct a new `Edge` object.
-    pub fn new(from: V, to: V, cost: W) -> Self {
-        Self { from, to, cost }
+impl<V, W> Adjacent<V, W> for (V, W) {
+    fn to(&self) -> &V {
+        &self.0
     }
 
-    pub fn as_tuple(&self) -> (&V, &V, &W) {
-        (&self.from, &self.to, &self.cost)
-    }
-}
-
-/// A struct which represent an adjacent vertex.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Adjacent<V, W> {
-    pub to: V,
-    pub cost: W,
-}
-
-impl<V, W> Adjacent<V, W> {
-    /// Construct a new `Adjacent` object.
-    pub fn new(to: V, cost: W) -> Self {
-        Self { to, cost }
-    }
-
-    pub fn as_tuple(&self) -> (&V, &W) {
-        (&self.to, &self.cost)
+    fn cost(&self) -> &W {
+        &self.1
     }
 }
 
-/// A trait represent directed/undirected graph with/without weight.
-///
-/// # Associated iterators
-///
-/// The `Vertices`, `Adjacents` and `Edges` requires that the type must be iterator and we can't write
-/// such that `type Type = impl Iterator<..>` inside of impl block.
-///
-/// Usually, chained iterator has complicated type and some iterator method take closure so
-/// that writing concrete type for the iterator is difficult or impossible.
-///
-/// One possible solution is define a new struct which hold initial iterator and implement
-/// `Iterator` to it so that desired iterator is created from the initial iterator like below.
-///
-/// ```ignore
-/// struct Wrapper<'a> {
-///     iter: std::slice::Iter<'a, usize>
-/// }
-///
-/// impl<'a> Iterator for Wrapper<'a> {
-///     type Item = (usize, usize);
-///     fn next(&self) -> Self::Item {
-///         // Using map to process iterator's value.
-///         self.iter.next().map(|v| (v, v))
-///     }
-/// }
-/// ```
-///
-/// This method works well, but in competitive programming, this method is too slow for
-/// implementing a custom `Graph`. So the next method stated below is better in such cases.
-///
-/// Next method is boxing the iterator like below.
-///
-/// ```ignore
-/// impl Graph for GraphStruct {
-///     // ...
-///     type Vertices<'a> = Box<dyn Iterator<Item = Cow<'a, Self::V>> + 'a> where Self: 'a;
-///     // ...
-///
-///     // ...
-///     fn vertices(&self) -> Self::Vertices<'_> {
-///         Box::new(todo!() /* write chained iterator here */)
-///     }
-/// }
-/// ```
-///
-/// If we wrap iterator with `Box`, the type will be the style of `Box<dyn Iterator<Item = ...>>`
-/// and it's easy to write. Also, this works even if the iterator using closure.
-///
-/// Boxing iterator take a cost, but if you can accept the cost, it's better.
-pub trait Graph {
-    type V: Clone;
-    type W: Clone;
-    type Vertices<'a>: Iterator<Item = Cow<'a, Self::V>>
+/// A trait represent edge in graph.
+pub trait Edge<V, W> {
+    /// Returns vertex goes into this edge.
+    fn from(&self) -> &V;
+
+    /// Returns vertex comes out this edge.
+    fn to(&self) -> &V;
+
+    /// Returns the weight of this edge.
+    fn cost(&self) -> &W;
+}
+
+impl<V, W> Edge<V, W> for (V, V, W) {
+    fn from(&self) -> &V {
+        &self.0
+    }
+
+    fn to(&self) -> &V {
+        &self.1
+    }
+
+    fn cost(&self) -> &W {
+        &self.2
+    }
+}
+
+/// A graph which can enumerate all vertices in graph.
+pub trait VertexEnumeratableGraph<V: Clone> {
+    /// The kind of iterator to be used to iterate the vertices.
+    type Vertices<'a>: Iterator<Item = Cow<'a, V>>
     where
-        Self: 'a;
-    type Adjacents<'a>: Iterator<Item = Cow<'a, Adjacent<Self::V, Self::W>>>
-    where
-        Self: 'a;
-    type Edges<'a>: Iterator<Item = Cow<'a, Edge<Self::V, Self::W>>>
-    where
+        V: 'a,
         Self: 'a;
 
-    /// Iterate all vertex.
+    /// Returns iterator over all vertices in this graph.
     fn vertices(&self) -> Self::Vertices<'_>;
+}
 
+/// A graph which can count all vertices in graph.
+pub trait VertexCountableGraph<V: Clone>: VertexEnumeratableGraph<V> {
     /// Returns number of vertex in this graph.
-    ///
-    /// By default, this call `vertices` and count the size of vector.
-    ///
-    /// User should override default implementation if it is possible to return the number of
-    /// vertex directly.
     fn vertex_count(&self) -> usize {
         self.vertices().count()
     }
+}
 
-    /// Iterate all adjacent of specified vertex.
-    fn adjacents(&self, v: Self::V) -> Self::Adjacents<'_>;
+/// A graph which can enumerate all adjacents of the vertex.
+pub trait AdjacentEnumeratableGraph<V, W> {
+    /// The type of the adjacents to be enumerated.
+    type Adjacent: Adjacent<V, W> + Clone;
 
-    /// Iterate all edge.
+    /// The kind of iterator to be used to iterate the adjacents.
+    type Adjacents<'a>: Iterator<Item = Cow<'a, Self::Adjacent>>
+    where
+        Self::Adjacent: 'a,
+        Self: 'a;
+
+    /// Returns iterator over all adjacents of the vertex `v`.
+    fn adjacents(&self, v: V) -> Self::Adjacents<'_>;
+}
+
+/// A graph which can enumerate all edges in the graph.
+pub trait EdgeEnumeratableGraph<V, W> {
+    /// The type of edge to be enumerated.
+    type Edge: Edge<V, W> + Clone;
+
+    /// The kind of iterator to be used to iterate the edges.
+    type Edges<'a>: Iterator<Item = Cow<'a, Self::Edge>>
+    where
+        Self::Edge: 'a,
+        Self: 'a;
+
+    /// Returns iterator over all edges in this graph.
     fn edges(&self) -> Self::Edges<'_>;
 }
 
+/// A simple adjacent list where vertex type is `usize`.
 pub struct AdjacentList<W> {
-    adjs: Vec<Vec<Adjacent<usize, W>>>,
-    edges: Vec<Edge<usize, W>>,
+    adjs: Vec<Vec<(usize, W)>>,
+    edges: Vec<(usize, usize, W)>,
 }
 
 impl<W: Clone> AdjacentList<W> {
-    /// Construct a new `AdjacentList`.
+    /// Returns a new `AdjacentList` with the number of vertex is `n`.
     pub fn new(n: usize) -> Self {
         Self {
             adjs: vec![Vec::new(); n],
@@ -141,110 +117,113 @@ impl<W: Clone> AdjacentList<W> {
         }
     }
 
-    /// Add an edge to graph.
-    pub fn add_edge(&mut self, edge: Edge<usize, W>) {
-        self.adjs[edge.from].push(Adjacent::new(edge.to, edge.cost.clone()));
-        self.edges.push(edge);
+    /// Add edge to this list.
+    pub fn add_edge(&mut self, from: usize, to: usize, cost: W) {
+        self.adjs[from].push((to, cost.clone()));
+        self.edges.push((from, to, cost));
     }
 }
 
-pub struct AdjacentListVertices<'a> {
-    iter: Range<usize>,
-    _phantom: PhantomData<&'a usize>,
-}
+impl<W> VertexEnumeratableGraph<usize> for AdjacentList<W> {
+    type Vertices<'a> = AdjacentListVertices<'a> where W: 'a;
 
-impl<'a> AdjacentListVertices<'a> {
-    fn new(iter: Range<usize>) -> Self {
-        Self {
-            iter,
+    fn vertices(&self) -> Self::Vertices<'_> {
+        AdjacentListVertices {
+            iter: 0..self.adjs.len(),
             _phantom: PhantomData,
         }
     }
 }
 
+impl<W> VertexCountableGraph<usize> for AdjacentList<W> {
+    fn vertex_count(&self) -> usize {
+        self.adjs.len()
+    }
+}
+
+impl<W: Clone> AdjacentEnumeratableGraph<usize, W> for AdjacentList<W> {
+    type Adjacent = (usize, W);
+    type Adjacents<'a> = AdjacentListAdjacents<'a, W> where W: 'a;
+
+    fn adjacents(&self, v: usize) -> Self::Adjacents<'_> {
+        AdjacentListAdjacents {
+            iter: self.adjs[v].iter(),
+        }
+    }
+}
+
+impl<W: Clone> EdgeEnumeratableGraph<usize, W> for AdjacentList<W> {
+    type Edge = (usize, usize, W);
+    type Edges<'a> = AdjacentListEdges<'a, W> where W: 'a;
+
+    fn edges(&self) -> Self::Edges<'_> {
+        AdjacentListEdges {
+            iter: self.edges.iter(),
+        }
+    }
+}
+
+/// An iterator over all vertices of `AdjacentList`.
+pub struct AdjacentListVertices<'a> {
+    iter: std::ops::Range<usize>,
+    _phantom: PhantomData<&'a usize>,
+}
+
 impl<'a> Iterator for AdjacentListVertices<'a> {
     type Item = Cow<'a, usize>;
+
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|v| Cow::Owned(v))
     }
 }
 
-pub struct AdjacentListEdges<'a, W> {
-    iter: Iter<'a, Edge<usize, W>>,
+/// An iterator over all adjacents of a vertex of `AdjacentList`.
+pub struct AdjacentListAdjacents<'a, W> {
+    iter: std::slice::Iter<'a, (usize, W)>,
 }
 
-impl<'a, W> AdjacentListEdges<'a, W> {
-    fn new(iter: Iter<'a, Edge<usize, W>>) -> Self {
-        Self { iter }
+impl<'a, W: Clone> Iterator for AdjacentListAdjacents<'a, W> {
+    type Item = Cow<'a, (usize, W)>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|v| Cow::Borrowed(v))
     }
 }
 
+/// An iterator over all edges of `AdjacentList`.
+pub struct AdjacentListEdges<'a, W> {
+    iter: std::slice::Iter<'a, (usize, usize, W)>,
+}
+
 impl<'a, W: Clone> Iterator for AdjacentListEdges<'a, W> {
-    type Item = Cow<'a, Edge<usize, W>>;
+    type Item = Cow<'a, (usize, usize, W)>;
+
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next().map(|edge| Cow::Borrowed(edge))
     }
 }
 
-pub struct AdjacentListAdjacents<'a, W> {
-    iter: Iter<'a, Adjacent<usize, W>>,
-}
-
-impl<'a, W> AdjacentListAdjacents<'a, W> {
-    fn new(iter: Iter<'a, Adjacent<usize, W>>) -> Self {
-        Self { iter }
-    }
-}
-
-impl<'a, W: Clone> Iterator for AdjacentListAdjacents<'a, W> {
-    type Item = Cow<'a, Adjacent<usize, W>>;
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|adj| Cow::Borrowed(adj))
-    }
-}
-
-impl<W: Clone> Graph for AdjacentList<W> {
-    type V = usize;
-    type W = W;
-    type Vertices<'a> = AdjacentListVertices<'a> where Self: 'a;
-    type Adjacents<'a> = AdjacentListAdjacents<'a, W> where Self: 'a;
-    type Edges<'a> = AdjacentListEdges<'a, W> where Self: 'a;
-
-    fn vertices(&self) -> Self::Vertices<'_> {
-        AdjacentListVertices::new(0..self.adjs.len())
-    }
-
-    fn vertex_count(&self) -> usize {
-        self.adjs.len()
-    }
-
-    fn adjacents(&self, v: Self::V) -> Self::Adjacents<'_> {
-        AdjacentListAdjacents::new(self.adjs[v].iter())
-    }
-
-    fn edges(&self) -> Self::Edges<'_> {
-        AdjacentListEdges::new(self.edges.iter())
-    }
-}
-
 /// An extension trait to add `bfs` to travel the graph and report if the vertex is visitable
 /// from specified vertex.
-pub trait BFS: Graph {
+pub trait BFS<V, W>: AdjacentEnumeratableGraph<V, W>
+where
+    V: Clone,
+{
     /// Calculate minimum number of edge in path from `start` to all vertex.
     ///
     /// `dist` must be initialized to None for all vertex.
     ///
     /// Time complexity is O(V + E).
-    fn bfs<D>(&self, start: Self::V, mut dist: D) -> D
+    fn bfs<D>(&self, start: V, mut dist: D) -> D
     where
-        D: SingleSourceDistanceTable<Self::V, usize>,
+        D: SingleSourceDistanceTable<V, usize>,
     {
         let mut queue = VecDeque::new();
         queue.push_back(start.clone());
         dist.set_distance(start, 0);
         while let Some(u) = queue.pop_front() {
             for adj in self.adjacents(u.clone()) {
-                let (v, _) = adj.as_tuple();
+                let v = adj.to();
                 if dist.distance(v).is_none() {
                     dist.set_distance(v.clone(), dist.distance(&u).unwrap() + 1);
                     queue.push_back(v.clone());
@@ -255,23 +234,28 @@ pub trait BFS: Graph {
     }
 }
 
-impl<G: Graph> BFS for G {}
+impl<V, W, G> BFS<V, W> for G
+where
+    G: AdjacentEnumeratableGraph<V, W>,
+    V: Clone,
+{
+}
 
 /// An extension trait to add `dijkstra` which calculate single shortest path distance
 /// of the graph.
-pub trait Dijkstra: Graph
+pub trait Dijkstra<V, W>: AdjacentEnumeratableGraph<V, W>
 where
-    Self::V: Ord,
-    Self::W: Ord + Add<Self::W, Output = Self::W>,
+    V: Ord + Clone,
+    W: Ord + Clone + Add<W, Output = W>,
 {
     /// Calculate shortest path distance from `start` to all vertex.
     ///
     /// `dist` must be initialized to None for all vertex.
     ///
     /// Time complexity is O((E + V)logV).
-    fn dijkstra<D>(&self, start: Self::V, init: Self::W, mut dist: D) -> D
+    fn dijkstra<D>(&self, start: V, init: W, mut dist: D) -> D
     where
-        D: SingleSourceDistanceTable<Self::V, Self::W>,
+        D: SingleSourceDistanceTable<V, W>,
     {
         let mut pq = BinaryHeap::new();
         pq.push(Reverse((init.clone(), start.clone())));
@@ -281,7 +265,7 @@ where
                 continue;
             }
             for adj in self.adjacents(u) {
-                let (v, uvdist) = adj.as_tuple();
+                let (v, uvdist) = (adj.to(), adj.cost());
                 let vdist = udist.clone() + uvdist.clone();
                 if dist.distance(&v).map(|d| *d < vdist).unwrap_or(false) {
                     continue;
@@ -294,18 +278,20 @@ where
     }
 }
 
-impl<G: Graph> Dijkstra for G
+impl<V, W, G> Dijkstra<V, W> for G
 where
-    G::V: Ord,
-    G::W: Ord + Add<G::W, Output = G::W>,
+    G: AdjacentEnumeratableGraph<V, W>,
+    V: Ord + Clone,
+    W: Ord + Clone + Add<W, Output = W>,
 {
 }
 
 /// An extension trait to add `bellman_ford` which calculate single shortest path distance
 /// of the graph.
-pub trait BellmanFord: Graph
+pub trait BellmanFord<V, W>: EdgeEnumeratableGraph<V, W> + VertexCountableGraph<V>
 where
-    Self::W: PartialOrd + Add<Self::W, Output = Self::W>,
+    V: Clone,
+    W: PartialOrd + Clone + Add<W, Output = W>,
 {
     /// Calculate shortest path distance from `start` to all vertex.
     ///
@@ -315,15 +301,15 @@ where
     /// `dist` must be initialized to None for all vertex.
     ///
     /// Time complexity is O(VE).
-    fn bellman_ford<D>(&self, start: Self::V, init: Self::W, mut dist: D) -> Option<D>
+    fn bellman_ford<D>(&self, start: V, init: W, mut dist: D) -> Option<D>
     where
-        D: SingleSourceDistanceTable<Self::V, Self::W>,
+        D: SingleSourceDistanceTable<V, W>,
     {
         let n = self.vertex_count();
         dist.set_distance(start, init);
         for i in 0..n {
             for edge in self.edges() {
-                let (u, v, uvdist) = edge.as_tuple();
+                let (u, v, uvdist) = (edge.from(), edge.to(), edge.cost());
                 let Some(udist) = dist.distance(u) else {
                     continue;
                 };
@@ -344,13 +330,20 @@ where
     }
 }
 
-impl<G: Graph> BellmanFord for G where G::W: PartialOrd + Add<G::W, Output = G::W> {}
+impl<V, W, G> BellmanFord<V, W> for G
+where
+    G: EdgeEnumeratableGraph<V, W> + VertexCountableGraph<V>,
+    V: Clone,
+    W: PartialOrd + Clone + Add<W, Output = W>,
+{
+}
 
 /// An extension trait to add `warshall_floyd` which calculate all pair shortest path distance
 /// of the graph.
-pub trait WarshallFloyd: Graph
+pub trait WarshallFloyd<V, W>: VertexCountableGraph<V> + AdjacentEnumeratableGraph<V, W>
 where
-    Self::W: PartialOrd + Add<Self::W, Output = Self::W>,
+    V: Clone,
+    W: PartialOrd + Clone + Add<W, Output = W>,
 {
     /// Calculate shortest path distance of all vertex-vertex pair.
     ///
@@ -362,14 +355,14 @@ where
     /// `is_negative` must return true if given weight is negative.
     ///
     /// Time complexity is O(V^3).
-    fn warshall_floyd<D, F>(&self, init: Self::W, mut dist: D, mut is_negative: F) -> Option<D>
+    fn warshall_floyd<D, F>(&self, init: W, mut dist: D, mut is_negative: F) -> Option<D>
     where
-        D: AllPairDistanceTable<Self::V, Self::W>,
-        F: FnMut(&Self::W) -> bool,
+        D: AllPairDistanceTable<V, W>,
+        F: FnMut(&W) -> bool,
     {
         for i in self.vertices() {
             for adj in self.adjacents((*i).clone()) {
-                let (j, w) = adj.as_tuple();
+                let (j, w) = (adj.to(), adj.cost());
                 dist.set_distance((*i).clone(), j.clone(), w.clone());
             }
             dist.set_distance((*i).clone(), (*i).clone(), init.clone());
@@ -404,7 +397,13 @@ where
     }
 }
 
-impl<G: Graph> WarshallFloyd for G where G::W: PartialOrd + Add<G::W, Output = G::W> {}
+impl<V, W, G> WarshallFloyd<V, W> for G
+where
+    G: VertexCountableGraph<V> + AdjacentEnumeratableGraph<V, W>,
+    V: Clone,
+    W: PartialOrd + Clone + Add<W, Output = W>,
+{
+}
 
 /// A trait to hold distance from any vertex to any vertex.
 ///
@@ -512,18 +511,16 @@ impl<V: Ord, D> SingleSourceDistanceTable<V, D> for BTreeMap<V, D> {
 
 #[cfg(test)]
 mod test {
-    use crate::graph::Edge;
-
     use super::{AdjacentList, BellmanFord, Dijkstra, WarshallFloyd, BFS};
 
     #[test]
     fn test_bfs() {
         // test case come from https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ALDS1_11_C
         let mut graph = AdjacentList::new(4);
-        graph.add_edge(Edge::new(0, 1, ()));
-        graph.add_edge(Edge::new(0, 3, ()));
-        graph.add_edge(Edge::new(1, 3, ()));
-        graph.add_edge(Edge::new(3, 2, ()));
+        graph.add_edge(0, 1, ());
+        graph.add_edge(0, 3, ());
+        graph.add_edge(1, 3, ());
+        graph.add_edge(3, 2, ());
         assert_eq!(
             graph.bfs(0, vec![None; 4]),
             vec![Some(0), Some(1), Some(2), Some(1)]
@@ -534,11 +531,11 @@ mod test {
     fn test_dijkstra() {
         // test case come from https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=GRL_1_A
         let mut graph = AdjacentList::new(4);
-        graph.add_edge(Edge::new(0, 1, 1));
-        graph.add_edge(Edge::new(0, 2, 4));
-        graph.add_edge(Edge::new(1, 2, 2));
-        graph.add_edge(Edge::new(2, 3, 1));
-        graph.add_edge(Edge::new(1, 3, 5));
+        graph.add_edge(0, 1, 1);
+        graph.add_edge(0, 2, 4);
+        graph.add_edge(1, 2, 2);
+        graph.add_edge(2, 3, 1);
+        graph.add_edge(1, 3, 5);
         assert_eq!(
             graph.dijkstra(0, 0, vec![None; 4]),
             vec![Some(0), Some(1), Some(3), Some(4)]
@@ -549,11 +546,11 @@ mod test {
     fn test_bellman_ford() {
         // test case come from https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=GRL_1_B
         let mut graph = AdjacentList::new(4);
-        graph.add_edge(Edge::new(0, 1, 2));
-        graph.add_edge(Edge::new(0, 2, 3));
-        graph.add_edge(Edge::new(1, 2, -5));
-        graph.add_edge(Edge::new(1, 3, 1));
-        graph.add_edge(Edge::new(2, 3, 2));
+        graph.add_edge(0, 1, 2);
+        graph.add_edge(0, 2, 3);
+        graph.add_edge(1, 2, -5);
+        graph.add_edge(1, 3, 1);
+        graph.add_edge(2, 3, 2);
         assert_eq!(
             graph.bellman_ford(0, 0, vec![None; 4]),
             Some(vec![Some(0), Some(2), Some(-3), Some(-1)])
@@ -564,12 +561,12 @@ mod test {
     fn test_bellman_ford_with_negative_cycle() {
         // test case come from https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=GRL_1_B
         let mut graph = AdjacentList::new(4);
-        graph.add_edge(Edge::new(0, 1, 2));
-        graph.add_edge(Edge::new(0, 2, 3));
-        graph.add_edge(Edge::new(1, 2, -5));
-        graph.add_edge(Edge::new(1, 3, 1));
-        graph.add_edge(Edge::new(2, 3, 2));
-        graph.add_edge(Edge::new(3, 1, 0));
+        graph.add_edge(0, 1, 2);
+        graph.add_edge(0, 2, 3);
+        graph.add_edge(1, 2, -5);
+        graph.add_edge(1, 3, 1);
+        graph.add_edge(2, 3, 2);
+        graph.add_edge(3, 1, 0);
         assert_eq!(graph.bellman_ford(0, 0, vec![None; 4]), None);
     }
 
@@ -577,12 +574,12 @@ mod test {
     fn test_warshall_floyd() {
         // test case come from https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=GRL_1_C
         let mut graph = AdjacentList::new(4);
-        graph.add_edge(Edge::new(0, 1, 1));
-        graph.add_edge(Edge::new(0, 2, 5));
-        graph.add_edge(Edge::new(1, 2, 2));
-        graph.add_edge(Edge::new(1, 3, 4));
-        graph.add_edge(Edge::new(2, 3, 1));
-        graph.add_edge(Edge::new(3, 2, 7));
+        graph.add_edge(0, 1, 1);
+        graph.add_edge(0, 2, 5);
+        graph.add_edge(1, 2, 2);
+        graph.add_edge(1, 3, 4);
+        graph.add_edge(2, 3, 1);
+        graph.add_edge(3, 2, 7);
         assert_eq!(
             graph.warshall_floyd(0, vec![vec![None; 4]; 4], |w| *w < 0),
             Some(vec![
@@ -598,12 +595,12 @@ mod test {
     fn test_warshall_floyd_with_negative_cycle() {
         // test case come from https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=GRL_1_C
         let mut graph = AdjacentList::new(4);
-        graph.add_edge(Edge::new(0, 1, 1));
-        graph.add_edge(Edge::new(0, 2, 5));
-        graph.add_edge(Edge::new(1, 2, 2));
-        graph.add_edge(Edge::new(1, 3, 4));
-        graph.add_edge(Edge::new(2, 3, 1));
-        graph.add_edge(Edge::new(3, 2, -7));
+        graph.add_edge(0, 1, 1);
+        graph.add_edge(0, 2, 5);
+        graph.add_edge(1, 2, 2);
+        graph.add_edge(1, 3, 4);
+        graph.add_edge(2, 3, 1);
+        graph.add_edge(3, 2, -7);
         assert_eq!(
             graph.warshall_floyd(0, vec![vec![None; 4]; 4], |w| *w < 0),
             None
