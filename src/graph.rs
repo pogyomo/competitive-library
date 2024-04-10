@@ -3,6 +3,7 @@ use std::{
     cmp::Reverse,
     collections::{BTreeMap, BinaryHeap, HashMap, VecDeque},
     hash::Hash,
+    marker::PhantomData,
     ops::Add,
 };
 
@@ -52,35 +53,53 @@ impl<V, W> Edge<V, W> for (V, V, W) {
 }
 
 /// A graph which can enumerate all vertices in graph.
-pub trait VertexEnumeratableGraph<'a, V: Clone + 'a> {
+pub trait VertexEnumeratableGraph<V: Clone> {
+    /// The kind of iterator to be used to iterate the vertices.
+    type Vertices<'a>: Iterator<Item = Cow<'a, V>>
+    where
+        V: 'a,
+        Self: 'a;
+
     /// Returns iterator over all vertices in this graph.
-    fn vertices(&'a self) -> impl Iterator<Item = Cow<'a, V>>;
+    fn vertices(&self) -> Self::Vertices<'_>;
 }
 
 /// A graph which can count all vertices in graph.
-pub trait VertexCountableGraph<'a, V: Clone + 'a>: VertexEnumeratableGraph<'a, V> {
+pub trait VertexCountableGraph<V: Clone>: VertexEnumeratableGraph<V> {
     /// Returns number of vertex in this graph.
-    fn vertex_count(&'a self) -> usize {
+    fn vertex_count(&self) -> usize {
         self.vertices().count()
     }
 }
 
 /// A graph which can enumerate all adjacents of the vertex.
-pub trait AdjacentEnumeratableGraph<'a, V: 'a, W: 'a> {
+pub trait AdjacentEnumeratableGraph<V, W> {
     /// The type of the adjacents to be enumerated.
     type Adjacent: Adjacent<V, W> + Clone;
 
+    /// The kind of iterator to be used to iterate the adjacents.
+    type Adjacents<'a>: Iterator<Item = Cow<'a, Self::Adjacent>>
+    where
+        Self::Adjacent: 'a,
+        Self: 'a;
+
     /// Returns iterator over all adjacents of the vertex `v`.
-    fn adjacents(&'a self, v: V) -> impl Iterator<Item = Cow<'a, Self::Adjacent>>;
+    fn adjacents(&self, v: V) -> Self::Adjacents<'_>;
 }
 
 /// A graph which can enumerate all edges in the graph.
-pub trait EdgeEnumeratableGraph<'a, V: 'a, W: 'a> {
+pub trait EdgeEnumeratableGraph<V, W> {
     /// The type of edge to be enumerated.
     type Edge: Edge<V, W> + Clone;
 
+    /// The kind of iterator to be used to iterate the edges.
+    type Edges<'a>: Iterator<Item = Cow<'a, Self::Edge>>
+    where
+        Self::Edge: 'a,
+        Self: 'a;
+
     /// Returns iterator over all edges in this graph.
-    fn edges(&'a self) -> impl Iterator<Item = Cow<'a, Self::Edge>>;
+    fn edges(&self) -> Self::Edges<'_>;
 }
 
 /// A simple adjacent list where vertex type is `usize`.
@@ -105,47 +124,97 @@ impl<W: Clone> AdjacentList<W> {
     }
 }
 
-impl<'a, W> VertexEnumeratableGraph<'a, usize> for AdjacentList<W> {
-    fn vertices(&'a self) -> impl Iterator<Item = Cow<'a, usize>> {
-        (0..self.adjs.len()).map(Cow::Owned)
+impl<W> VertexEnumeratableGraph<usize> for AdjacentList<W> {
+    type Vertices<'a> = AdjacentListVertices<'a> where W: 'a;
+
+    fn vertices(&self) -> Self::Vertices<'_> {
+        AdjacentListVertices {
+            iter: 0..self.adjs.len(),
+            _phantom: PhantomData,
+        }
     }
 }
 
-impl<W> VertexCountableGraph<'_, usize> for AdjacentList<W> {
+impl<W> VertexCountableGraph<usize> for AdjacentList<W> {
     fn vertex_count(&self) -> usize {
         self.adjs.len()
     }
 }
 
-impl<'a, W: Clone + 'a> AdjacentEnumeratableGraph<'a, usize, W> for AdjacentList<W> {
+impl<W: Clone> AdjacentEnumeratableGraph<usize, W> for AdjacentList<W> {
     type Adjacent = (usize, W);
+    type Adjacents<'a> = AdjacentListAdjacents<'a, W> where W: 'a;
 
-    fn adjacents(&'a self, v: usize) -> impl Iterator<Item = Cow<'a, Self::Adjacent>> {
-        self.adjs[v].iter().map(Cow::Borrowed)
+    fn adjacents(&self, v: usize) -> Self::Adjacents<'_> {
+        AdjacentListAdjacents {
+            iter: self.adjs[v].iter(),
+        }
     }
 }
 
-impl<'a, W: Clone + 'a> EdgeEnumeratableGraph<'a, usize, W> for AdjacentList<W> {
+impl<W: Clone> EdgeEnumeratableGraph<usize, W> for AdjacentList<W> {
     type Edge = (usize, usize, W);
+    type Edges<'a> = AdjacentListEdges<'a, W> where W: 'a;
 
-    fn edges(&'a self) -> impl Iterator<Item = Cow<'a, Self::Edge>> {
-        self.edges.iter().map(Cow::Borrowed)
+    fn edges(&self) -> Self::Edges<'_> {
+        AdjacentListEdges {
+            iter: self.edges.iter(),
+        }
+    }
+}
+
+/// An iterator over all vertices of `AdjacentList`.
+pub struct AdjacentListVertices<'a> {
+    iter: std::ops::Range<usize>,
+    _phantom: PhantomData<&'a usize>,
+}
+
+impl<'a> Iterator for AdjacentListVertices<'a> {
+    type Item = Cow<'a, usize>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|v| Cow::Owned(v))
+    }
+}
+
+/// An iterator over all adjacents of a vertex of `AdjacentList`.
+pub struct AdjacentListAdjacents<'a, W> {
+    iter: std::slice::Iter<'a, (usize, W)>,
+}
+
+impl<'a, W: Clone> Iterator for AdjacentListAdjacents<'a, W> {
+    type Item = Cow<'a, (usize, W)>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|v| Cow::Borrowed(v))
+    }
+}
+
+/// An iterator over all edges of `AdjacentList`.
+pub struct AdjacentListEdges<'a, W> {
+    iter: std::slice::Iter<'a, (usize, usize, W)>,
+}
+
+impl<'a, W: Clone> Iterator for AdjacentListEdges<'a, W> {
+    type Item = Cow<'a, (usize, usize, W)>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(|edge| Cow::Borrowed(edge))
     }
 }
 
 /// An extension trait to add `bfs` to travel the graph and report if the vertex is visitable
 /// from specified vertex.
-pub trait BFS<'a, V, W>: AdjacentEnumeratableGraph<'a, V, W>
+pub trait BFS<V, W>: AdjacentEnumeratableGraph<V, W>
 where
-    V: Clone + 'a,
-    W: 'a,
+    V: Clone,
 {
     /// Calculate minimum number of edge in path from `start` to all vertex.
     ///
     /// `dist` must be initialized to None for all vertex.
     ///
     /// Time complexity is O(V + E).
-    fn bfs<D>(&'a self, start: V, mut dist: D) -> D
+    fn bfs<D>(&self, start: V, mut dist: D) -> D
     where
         D: SingleSourceDistanceTable<V, usize>,
     {
@@ -165,27 +234,26 @@ where
     }
 }
 
-impl<'a, V, W, G> BFS<'a, V, W> for G
+impl<V, W, G> BFS<V, W> for G
 where
-    G: AdjacentEnumeratableGraph<'a, V, W>,
-    V: Clone + 'a,
-    W: 'a,
+    G: AdjacentEnumeratableGraph<V, W>,
+    V: Clone,
 {
 }
 
 /// An extension trait to add `dijkstra` which calculate single shortest path distance
 /// of the graph.
-pub trait Dijkstra<'a, V, W>: AdjacentEnumeratableGraph<'a, V, W>
+pub trait Dijkstra<V, W>: AdjacentEnumeratableGraph<V, W>
 where
-    V: Ord + Clone + 'a,
-    W: Ord + Clone + Add<W, Output = W> + 'a,
+    V: Ord + Clone,
+    W: Ord + Clone + Add<W, Output = W>,
 {
     /// Calculate shortest path distance from `start` to all vertex.
     ///
     /// `dist` must be initialized to None for all vertex.
     ///
     /// Time complexity is O((E + V)logV).
-    fn dijkstra<D>(&'a self, start: V, init: W, mut dist: D) -> D
+    fn dijkstra<D>(&self, start: V, init: W, mut dist: D) -> D
     where
         D: SingleSourceDistanceTable<V, W>,
     {
@@ -199,7 +267,7 @@ where
             for adj in self.adjacents(u) {
                 let (v, uvdist) = (adj.to(), adj.cost());
                 let vdist = udist.clone() + uvdist.clone();
-                if dist.distance(v).map(|d| *d < vdist).unwrap_or(false) {
+                if dist.distance(&v).map(|d| *d < vdist).unwrap_or(false) {
                     continue;
                 }
                 dist.set_distance(v.clone(), vdist.clone());
@@ -210,21 +278,20 @@ where
     }
 }
 
-impl<'a, V, W, G> Dijkstra<'a, V, W> for G
+impl<V, W, G> Dijkstra<V, W> for G
 where
-    G: AdjacentEnumeratableGraph<'a, V, W>,
-    V: Ord + Clone + 'a,
-    W: Ord + Clone + Add<W, Output = W> + 'a,
+    G: AdjacentEnumeratableGraph<V, W>,
+    V: Ord + Clone,
+    W: Ord + Clone + Add<W, Output = W>,
 {
 }
 
 /// An extension trait to add `bellman_ford` which calculate single shortest path distance
 /// of the graph.
-pub trait BellmanFord<'a, V, W>:
-    EdgeEnumeratableGraph<'a, V, W> + VertexCountableGraph<'a, V>
+pub trait BellmanFord<V, W>: EdgeEnumeratableGraph<V, W> + VertexCountableGraph<V>
 where
-    V: Clone + 'a,
-    W: PartialOrd + Clone + Add<W, Output = W> + 'a,
+    V: Clone,
+    W: PartialOrd + Clone + Add<W, Output = W>,
 {
     /// Calculate shortest path distance from `start` to all vertex.
     ///
@@ -234,7 +301,7 @@ where
     /// `dist` must be initialized to None for all vertex.
     ///
     /// Time complexity is O(VE).
-    fn bellman_ford<D>(&'a self, start: V, init: W, mut dist: D) -> Option<D>
+    fn bellman_ford<D>(&self, start: V, init: W, mut dist: D) -> Option<D>
     where
         D: SingleSourceDistanceTable<V, W>,
     {
@@ -263,21 +330,20 @@ where
     }
 }
 
-impl<'a, V, W, G> BellmanFord<'a, V, W> for G
+impl<V, W, G> BellmanFord<V, W> for G
 where
-    G: EdgeEnumeratableGraph<'a, V, W> + VertexCountableGraph<'a, V>,
-    V: Clone + 'a,
-    W: PartialOrd + Clone + Add<W, Output = W> + 'a,
+    G: EdgeEnumeratableGraph<V, W> + VertexCountableGraph<V>,
+    V: Clone,
+    W: PartialOrd + Clone + Add<W, Output = W>,
 {
 }
 
 /// An extension trait to add `warshall_floyd` which calculate all pair shortest path distance
 /// of the graph.
-pub trait WarshallFloyd<'a, V, W>:
-    VertexCountableGraph<'a, V> + AdjacentEnumeratableGraph<'a, V, W>
+pub trait WarshallFloyd<V, W>: VertexCountableGraph<V> + AdjacentEnumeratableGraph<V, W>
 where
-    V: Clone + 'a,
-    W: PartialOrd + Clone + Add<W, Output = W> + 'a,
+    V: Clone,
+    W: PartialOrd + Clone + Add<W, Output = W>,
 {
     /// Calculate shortest path distance of all vertex-vertex pair.
     ///
@@ -289,7 +355,7 @@ where
     /// `is_negative` must return true if given weight is negative.
     ///
     /// Time complexity is O(V^3).
-    fn warshall_floyd<D, F>(&'a self, init: W, mut dist: D, mut is_negative: F) -> Option<D>
+    fn warshall_floyd<D, F>(&self, init: W, mut dist: D, mut is_negative: F) -> Option<D>
     where
         D: AllPairDistanceTable<V, W>,
         F: FnMut(&W) -> bool,
@@ -331,11 +397,11 @@ where
     }
 }
 
-impl<'a, V, W, G> WarshallFloyd<'a, V, W> for G
+impl<V, W, G> WarshallFloyd<V, W> for G
 where
-    G: VertexCountableGraph<'a, V> + AdjacentEnumeratableGraph<'a, V, W>,
-    V: Clone + 'a,
-    W: PartialOrd + Clone + Add<W, Output = W> + 'a,
+    G: VertexCountableGraph<V> + AdjacentEnumeratableGraph<V, W>,
+    V: Clone,
+    W: PartialOrd + Clone + Add<W, Output = W>,
 {
 }
 
