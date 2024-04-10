@@ -174,7 +174,7 @@ impl<'a> Iterator for AdjacentListVertices<'a> {
     type Item = Cow<'a, usize>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|v| Cow::Owned(v))
+        self.iter.next().map(Cow::Owned)
     }
 }
 
@@ -187,7 +187,7 @@ impl<'a, W: Clone> Iterator for AdjacentListAdjacents<'a, W> {
     type Item = Cow<'a, (usize, W)>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|v| Cow::Borrowed(v))
+        self.iter.next().map(Cow::Borrowed)
     }
 }
 
@@ -200,7 +200,7 @@ impl<'a, W: Clone> Iterator for AdjacentListEdges<'a, W> {
     type Item = Cow<'a, (usize, usize, W)>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|edge| Cow::Borrowed(edge))
+        self.iter.next().map(Cow::Borrowed)
     }
 }
 
@@ -268,7 +268,7 @@ where
             for adj in self.adjacents(u) {
                 let (v, uvdist) = (adj.to(), adj.cost());
                 let vdist = udist.clone() + uvdist.clone();
-                if dist.distance(&v).map(|d| *d < vdist).unwrap_or(false) {
+                if dist.distance(v).map(|d| *d < vdist).unwrap_or(false) {
                     continue;
                 }
                 dist.set_distance(v.clone(), vdist.clone());
