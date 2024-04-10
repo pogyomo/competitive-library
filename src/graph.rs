@@ -118,9 +118,10 @@ impl<W: Clone> AdjacentList<W> {
     }
 
     /// Add edge to this list.
-    pub fn add_edge(&mut self, from: usize, to: usize, cost: W) {
+    pub fn add_edge<E: Edge<usize, W>>(&mut self, edge: E) {
+        let (from, to, cost) = (*edge.from(), *edge.to(), edge.cost());
         self.adjs[from].push((to, cost.clone()));
-        self.edges.push((from, to, cost));
+        self.edges.push((from, to, cost.clone()));
     }
 }
 
@@ -517,10 +518,10 @@ mod test {
     fn test_bfs() {
         // test case come from https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=ALDS1_11_C
         let mut graph = AdjacentList::new(4);
-        graph.add_edge(0, 1, ());
-        graph.add_edge(0, 3, ());
-        graph.add_edge(1, 3, ());
-        graph.add_edge(3, 2, ());
+        graph.add_edge((0, 1, ()));
+        graph.add_edge((0, 3, ()));
+        graph.add_edge((1, 3, ()));
+        graph.add_edge((3, 2, ()));
         assert_eq!(
             graph.bfs(0, vec![None; 4]),
             vec![Some(0), Some(1), Some(2), Some(1)]
@@ -531,11 +532,11 @@ mod test {
     fn test_dijkstra() {
         // test case come from https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=GRL_1_A
         let mut graph = AdjacentList::new(4);
-        graph.add_edge(0, 1, 1);
-        graph.add_edge(0, 2, 4);
-        graph.add_edge(1, 2, 2);
-        graph.add_edge(2, 3, 1);
-        graph.add_edge(1, 3, 5);
+        graph.add_edge((0, 1, 1));
+        graph.add_edge((0, 2, 4));
+        graph.add_edge((1, 2, 2));
+        graph.add_edge((2, 3, 1));
+        graph.add_edge((1, 3, 5));
         assert_eq!(
             graph.dijkstra(0, 0, vec![None; 4]),
             vec![Some(0), Some(1), Some(3), Some(4)]
@@ -546,11 +547,11 @@ mod test {
     fn test_bellman_ford() {
         // test case come from https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=GRL_1_B
         let mut graph = AdjacentList::new(4);
-        graph.add_edge(0, 1, 2);
-        graph.add_edge(0, 2, 3);
-        graph.add_edge(1, 2, -5);
-        graph.add_edge(1, 3, 1);
-        graph.add_edge(2, 3, 2);
+        graph.add_edge((0, 1, 2));
+        graph.add_edge((0, 2, 3));
+        graph.add_edge((1, 2, -5));
+        graph.add_edge((1, 3, 1));
+        graph.add_edge((2, 3, 2));
         assert_eq!(
             graph.bellman_ford(0, 0, vec![None; 4]),
             Some(vec![Some(0), Some(2), Some(-3), Some(-1)])
@@ -561,12 +562,12 @@ mod test {
     fn test_bellman_ford_with_negative_cycle() {
         // test case come from https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=GRL_1_B
         let mut graph = AdjacentList::new(4);
-        graph.add_edge(0, 1, 2);
-        graph.add_edge(0, 2, 3);
-        graph.add_edge(1, 2, -5);
-        graph.add_edge(1, 3, 1);
-        graph.add_edge(2, 3, 2);
-        graph.add_edge(3, 1, 0);
+        graph.add_edge((0, 1, 2));
+        graph.add_edge((0, 2, 3));
+        graph.add_edge((1, 2, -5));
+        graph.add_edge((1, 3, 1));
+        graph.add_edge((2, 3, 2));
+        graph.add_edge((3, 1, 0));
         assert_eq!(graph.bellman_ford(0, 0, vec![None; 4]), None);
     }
 
@@ -574,12 +575,12 @@ mod test {
     fn test_warshall_floyd() {
         // test case come from https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=GRL_1_C
         let mut graph = AdjacentList::new(4);
-        graph.add_edge(0, 1, 1);
-        graph.add_edge(0, 2, 5);
-        graph.add_edge(1, 2, 2);
-        graph.add_edge(1, 3, 4);
-        graph.add_edge(2, 3, 1);
-        graph.add_edge(3, 2, 7);
+        graph.add_edge((0, 1, 1));
+        graph.add_edge((0, 2, 5));
+        graph.add_edge((1, 2, 2));
+        graph.add_edge((1, 3, 4));
+        graph.add_edge((2, 3, 1));
+        graph.add_edge((3, 2, 7));
         assert_eq!(
             graph.warshall_floyd(0, vec![vec![None; 4]; 4], |w| *w < 0),
             Some(vec![
@@ -595,12 +596,12 @@ mod test {
     fn test_warshall_floyd_with_negative_cycle() {
         // test case come from https://judge.u-aizu.ac.jp/onlinejudge/description.jsp?id=GRL_1_C
         let mut graph = AdjacentList::new(4);
-        graph.add_edge(0, 1, 1);
-        graph.add_edge(0, 2, 5);
-        graph.add_edge(1, 2, 2);
-        graph.add_edge(1, 3, 4);
-        graph.add_edge(2, 3, 1);
-        graph.add_edge(3, 2, -7);
+        graph.add_edge((0, 1, 1));
+        graph.add_edge((0, 2, 5));
+        graph.add_edge((1, 2, 2));
+        graph.add_edge((1, 3, 4));
+        graph.add_edge((2, 3, 1));
+        graph.add_edge((3, 2, -7));
         assert_eq!(
             graph.warshall_floyd(0, vec![vec![None; 4]; 4], |w| *w < 0),
             None
