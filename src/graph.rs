@@ -53,7 +53,7 @@ impl<V, W> Edge<V, W> for (V, V, W) {
 }
 
 /// A graph which can enumerate all vertices in graph.
-pub trait VertexEnumeratableGraph<V: Clone> {
+pub trait VertexIterableGraph<V: Clone> {
     /// The kind of iterator to be used to iterate the vertices.
     type Vertices<'a>: Iterator<Item = Cow<'a, V>>
     where
@@ -65,7 +65,7 @@ pub trait VertexEnumeratableGraph<V: Clone> {
 }
 
 /// A graph which can count all vertices in graph.
-pub trait VertexCountableGraph<V: Clone>: VertexEnumeratableGraph<V> {
+pub trait VertexCountableGraph<V: Clone>: VertexIterableGraph<V> {
     /// Returns number of vertex in this graph.
     fn vertex_count(&self) -> usize {
         self.vertices().count()
@@ -73,7 +73,7 @@ pub trait VertexCountableGraph<V: Clone>: VertexEnumeratableGraph<V> {
 }
 
 /// A graph which can enumerate all adjacents of the vertex.
-pub trait AdjacentEnumeratableGraph<V, W> {
+pub trait AdjacentIterableGraph<V, W> {
     /// The type of the adjacents to be enumerated.
     type Adjacent: Adjacent<V, W> + Clone;
 
@@ -88,7 +88,7 @@ pub trait AdjacentEnumeratableGraph<V, W> {
 }
 
 /// A graph which can enumerate all edges in the graph.
-pub trait EdgeEnumeratableGraph<V, W> {
+pub trait EdgeIterableGraph<V, W> {
     /// The type of edge to be enumerated.
     type Edge: Edge<V, W> + Clone;
 
@@ -189,7 +189,7 @@ impl<W: Clone> AdjacentList<W> {
     }
 }
 
-impl<W> VertexEnumeratableGraph<usize> for AdjacentList<W> {
+impl<W> VertexIterableGraph<usize> for AdjacentList<W> {
     type Vertices<'a> = Owned<'a, usize, std::ops::Range<usize>> where W: 'a;
 
     fn vertices(&self) -> Self::Vertices<'_> {
@@ -203,7 +203,7 @@ impl<W> VertexCountableGraph<usize> for AdjacentList<W> {
     }
 }
 
-impl<W: Clone> AdjacentEnumeratableGraph<usize, W> for AdjacentList<W> {
+impl<W: Clone> AdjacentIterableGraph<usize, W> for AdjacentList<W> {
     type Adjacent = (usize, W);
     type Adjacents<'a> = Borrowed<'a, Self::Adjacent> where W: 'a;
 
@@ -212,7 +212,7 @@ impl<W: Clone> AdjacentEnumeratableGraph<usize, W> for AdjacentList<W> {
     }
 }
 
-impl<W: Clone> EdgeEnumeratableGraph<usize, W> for AdjacentList<W> {
+impl<W: Clone> EdgeIterableGraph<usize, W> for AdjacentList<W> {
     type Edge = (usize, usize, W);
     type Edges<'a> = Borrowed<'a, Self::Edge> where W: 'a;
 
@@ -223,7 +223,7 @@ impl<W: Clone> EdgeEnumeratableGraph<usize, W> for AdjacentList<W> {
 
 /// An extension trait to add `bfs` to travel the graph and report if the vertex is visitable
 /// from specified vertex.
-pub trait BFS<V, W>: AdjacentEnumeratableGraph<V, W>
+pub trait BFS<V, W>: AdjacentIterableGraph<V, W>
 where
     V: Clone,
 {
@@ -254,14 +254,14 @@ where
 
 impl<V, W, G> BFS<V, W> for G
 where
-    G: AdjacentEnumeratableGraph<V, W>,
+    G: AdjacentIterableGraph<V, W>,
     V: Clone,
 {
 }
 
 /// An extension trait to add `dijkstra` which calculate single shortest path distance
 /// of the graph.
-pub trait Dijkstra<V, W>: AdjacentEnumeratableGraph<V, W>
+pub trait Dijkstra<V, W>: AdjacentIterableGraph<V, W>
 where
     V: Ord + Clone,
     W: Ord + Clone + Add<W, Output = W>,
@@ -298,7 +298,7 @@ where
 
 impl<V, W, G> Dijkstra<V, W> for G
 where
-    G: AdjacentEnumeratableGraph<V, W>,
+    G: AdjacentIterableGraph<V, W>,
     V: Ord + Clone,
     W: Ord + Clone + Add<W, Output = W>,
 {
@@ -306,7 +306,7 @@ where
 
 /// An extension trait to add `bellman_ford` which calculate single shortest path distance
 /// of the graph.
-pub trait BellmanFord<V, W>: EdgeEnumeratableGraph<V, W> + VertexCountableGraph<V>
+pub trait BellmanFord<V, W>: EdgeIterableGraph<V, W> + VertexCountableGraph<V>
 where
     V: Clone,
     W: PartialOrd + Clone + Add<W, Output = W>,
@@ -350,7 +350,7 @@ where
 
 impl<V, W, G> BellmanFord<V, W> for G
 where
-    G: EdgeEnumeratableGraph<V, W> + VertexCountableGraph<V>,
+    G: EdgeIterableGraph<V, W> + VertexCountableGraph<V>,
     V: Clone,
     W: PartialOrd + Clone + Add<W, Output = W>,
 {
@@ -358,7 +358,7 @@ where
 
 /// An extension trait to add `warshall_floyd` which calculate all pair shortest path distance
 /// of the graph.
-pub trait WarshallFloyd<V, W>: VertexCountableGraph<V> + AdjacentEnumeratableGraph<V, W>
+pub trait WarshallFloyd<V, W>: VertexCountableGraph<V> + AdjacentIterableGraph<V, W>
 where
     V: Clone,
     W: PartialOrd + Clone + Add<W, Output = W>,
@@ -417,7 +417,7 @@ where
 
 impl<V, W, G> WarshallFloyd<V, W> for G
 where
-    G: VertexCountableGraph<V> + AdjacentEnumeratableGraph<V, W>,
+    G: VertexCountableGraph<V> + AdjacentIterableGraph<V, W>,
     V: Clone,
     W: PartialOrd + Clone + Add<W, Output = W>,
 {
