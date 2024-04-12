@@ -102,6 +102,70 @@ pub trait EdgeEnumeratableGraph<V, W> {
     fn edges(&self) -> Self::Edges<'_>;
 }
 
+/// A helper struct which convert each borrowed element in iterator into `Cow::Borrowed`.
+pub struct Borrowed<'a, A, I = std::slice::Iter<'a, A>>
+where
+    A: 'a,
+    I: Iterator<Item = &'a A>,
+{
+    iter: I,
+}
+
+impl<'a, A, I> Borrowed<'a, A, I>
+where
+    A: 'a,
+    I: Iterator<Item = &'a A>,
+{
+    pub fn new(iter: I) -> Self {
+        Self { iter }
+    }
+}
+
+impl<'a, A, I> Iterator for Borrowed<'a, A, I>
+where
+    A: Clone + 'a,
+    I: Iterator<Item = &'a A>,
+{
+    type Item = Cow<'a, A>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(Cow::Borrowed)
+    }
+}
+
+/// A helper struct which convert each owned element in iterator into `Cow::Owned`.
+pub struct Owned<'a, A, I = std::vec::IntoIter<A>>
+where
+    I: Iterator<Item = A>,
+{
+    iter: I,
+    _phantom: PhantomData<&'a A>,
+}
+
+impl<'a, A, I> Owned<'a, A, I>
+where
+    I: Iterator<Item = A>,
+{
+    pub fn new(iter: I) -> Self {
+        Self {
+            iter,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<'a, A, I> Iterator for Owned<'a, A, I>
+where
+    A: Clone,
+    I: Iterator<Item = A>,
+{
+    type Item = Cow<'a, A>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.iter.next().map(Cow::Owned)
+    }
+}
+
 /// A simple adjacent list where vertex type is `usize`.
 pub struct AdjacentList<W> {
     adjs: Vec<Vec<(usize, W)>>,
@@ -126,13 +190,10 @@ impl<W: Clone> AdjacentList<W> {
 }
 
 impl<W> VertexEnumeratableGraph<usize> for AdjacentList<W> {
-    type Vertices<'a> = AdjacentListVertices<'a> where W: 'a;
+    type Vertices<'a> = Owned<'a, usize, std::ops::Range<usize>> where W: 'a;
 
     fn vertices(&self) -> Self::Vertices<'_> {
-        AdjacentListVertices {
-            iter: 0..self.adjs.len(),
-            _phantom: PhantomData,
-        }
+        Owned::new(0..self.adjs.len())
     }
 }
 
@@ -144,63 +205,19 @@ impl<W> VertexCountableGraph<usize> for AdjacentList<W> {
 
 impl<W: Clone> AdjacentEnumeratableGraph<usize, W> for AdjacentList<W> {
     type Adjacent = (usize, W);
-    type Adjacents<'a> = AdjacentListAdjacents<'a, W> where W: 'a;
+    type Adjacents<'a> = Borrowed<'a, Self::Adjacent> where W: 'a;
 
     fn adjacents(&self, v: usize) -> Self::Adjacents<'_> {
-        AdjacentListAdjacents {
-            iter: self.adjs[v].iter(),
-        }
+        Borrowed::new(self.adjs[v].iter())
     }
 }
 
 impl<W: Clone> EdgeEnumeratableGraph<usize, W> for AdjacentList<W> {
     type Edge = (usize, usize, W);
-    type Edges<'a> = AdjacentListEdges<'a, W> where W: 'a;
+    type Edges<'a> = Borrowed<'a, Self::Edge> where W: 'a;
 
     fn edges(&self) -> Self::Edges<'_> {
-        AdjacentListEdges {
-            iter: self.edges.iter(),
-        }
-    }
-}
-
-/// An iterator over all vertices of `AdjacentList`.
-pub struct AdjacentListVertices<'a> {
-    iter: std::ops::Range<usize>,
-    _phantom: PhantomData<&'a usize>,
-}
-
-impl<'a> Iterator for AdjacentListVertices<'a> {
-    type Item = Cow<'a, usize>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(Cow::Owned)
-    }
-}
-
-/// An iterator over all adjacents of a vertex of `AdjacentList`.
-pub struct AdjacentListAdjacents<'a, W> {
-    iter: std::slice::Iter<'a, (usize, W)>,
-}
-
-impl<'a, W: Clone> Iterator for AdjacentListAdjacents<'a, W> {
-    type Item = Cow<'a, (usize, W)>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(Cow::Borrowed)
-    }
-}
-
-/// An iterator over all edges of `AdjacentList`.
-pub struct AdjacentListEdges<'a, W> {
-    iter: std::slice::Iter<'a, (usize, usize, W)>,
-}
-
-impl<'a, W: Clone> Iterator for AdjacentListEdges<'a, W> {
-    type Item = Cow<'a, (usize, usize, W)>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(Cow::Borrowed)
+        Borrowed::new(self.edges.iter())
     }
 }
 
