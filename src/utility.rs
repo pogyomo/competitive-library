@@ -209,9 +209,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use crate::utility::is_subsequence_of;
-
-    use super::{compress, max_subsequence, min_subsequence, rle};
+    use super::{compress, is_subsequence_of, max_subsequence, min_subsequence, rle};
 
     #[test]
     fn test_compress() {
