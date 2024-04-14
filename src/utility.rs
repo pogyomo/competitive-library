@@ -154,8 +154,31 @@ where
     min_subsequence_by(iter, |a, b| a.cmp(b))
 }
 
+/// Returns true if given `sub` is subsequence of `iter`.
+/// The `sub` sequence need not be continueous at `iter`.
+///
+/// Time complexity is O(N).
+pub fn is_subsequence_of<T, I1, I2>(iter: I1, sub: I2) -> bool
+where
+    T: Eq,
+    I1: IntoIterator<Item = T>,
+    I2: IntoIterator<Item = T>,
+{
+    let mut sub = sub.into_iter().peekable();
+    for v in iter.into_iter() {
+        if let Some(w) = sub.peek() {
+            if v == *w {
+                sub.next();
+            }
+        }
+    }
+    sub.next().is_none()
+}
+
 #[cfg(test)]
 mod test {
+    use crate::utility::is_subsequence_of;
+
     use super::{compress, max_subsequence, min_subsequence, rle};
 
     #[test]
@@ -208,5 +231,12 @@ mod test {
         }
         assert_eq!(min_subsequence(v), Some(min));
         assert_eq!(min_subsequence(Vec::<isize>::new()), None);
+    }
+
+    #[test]
+    fn test_is_subsequence_of() {
+        assert!(is_subsequence_of(vec![1, 2, 3, 4], vec![2, 4]));
+        assert!(is_subsequence_of(vec![1, 3, 4, 6, 8], vec![1, 4, 6, 8]));
+        assert!(!is_subsequence_of(vec![1, 3, 4, 6, 8], vec![1, 1, 4, 6, 8]));
     }
 }
