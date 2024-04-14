@@ -154,7 +154,47 @@ where
     min_subsequence_by(iter, |a, b| a.cmp(b))
 }
 
+/// Returns true if given `sub` is subsequence of `iter` with respect to the specified
+/// comparition function.
+///
+/// The `sub` sequence need not be continueous at `iter`.
+///
+/// Time complexity is O(N).
+pub fn is_subsequence_of_by<T, I1, I2, F>(iter: I1, sub: I2, mut f: F) -> bool
+where
+    I1: IntoIterator<Item = T>,
+    I2: IntoIterator<Item = T>,
+    F: FnMut(&T, &T) -> bool,
+{
+    let mut sub = sub.into_iter().peekable();
+    for v in iter.into_iter() {
+        if let Some(w) = sub.peek() {
+            if f(&v, w) {
+                sub.next();
+            }
+        }
+    }
+    sub.next().is_none()
+}
+
+/// Returns true if given `sub` is subsequence of `iter` with respect to the specified
+/// key extraction function.
+///
+/// The `sub` sequence need not be continueous at `iter`.
+///
+/// Time complexity is O(N).
+pub fn is_subsequence_of_by_key<T, I1, I2, F, K>(iter: I1, sub: I2, mut f: F) -> bool
+where
+    I1: IntoIterator<Item = T>,
+    I2: IntoIterator<Item = T>,
+    F: FnMut(&T) -> K,
+    K: Eq,
+{
+    is_subsequence_of_by(iter, sub, |v1, v2| f(v1) == f(v2))
+}
+
 /// Returns true if given `sub` is subsequence of `iter`.
+///
 /// The `sub` sequence need not be continueous at `iter`.
 ///
 /// Time complexity is O(N).
@@ -164,15 +204,7 @@ where
     I1: IntoIterator<Item = T>,
     I2: IntoIterator<Item = T>,
 {
-    let mut sub = sub.into_iter().peekable();
-    for v in iter.into_iter() {
-        if let Some(w) = sub.peek() {
-            if v == *w {
-                sub.next();
-            }
-        }
-    }
-    sub.next().is_none()
+    is_subsequence_of_by(iter, sub, |v1, v2| v1 == v2)
 }
 
 #[cfg(test)]
