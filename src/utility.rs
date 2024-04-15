@@ -41,27 +41,51 @@ pub fn compress<T: Ord, I: IntoIterator<Item = T>>(iter: I) -> Compress<T> {
     Compress { map }
 }
 
-/// Compress given data with run-length encoding.
-///
-/// Time complexity is O(N).
-pub fn rle<T: Eq, I: IntoIterator<Item = T>>(iter: I) -> Vec<(T, usize)> {
-    let mut iter = iter.into_iter();
-    let mut res = Vec::new();
-    let mut prev = match iter.next() {
-        Some(first) => first,
-        None => return res,
-    };
-    let mut count = 1;
-    for v in iter {
-        if v != prev {
-            res.push((prev, count));
-            count = 0;
+/// A struct which provide functionals to compress/decompress data with run-length encoding.
+pub struct RLE;
+
+impl RLE {
+    /// Compress given data with run-length encoding.
+    ///
+    /// Time complexity is O(N).
+    pub fn compress<T, I>(iter: I) -> Vec<(T, usize)>
+    where
+        T: Eq,
+        I: IntoIterator<Item = T>,
+    {
+        let mut iter = iter.into_iter();
+        let mut res = Vec::new();
+        let mut prev = match iter.next() {
+            Some(first) => first,
+            None => return res,
+        };
+        let mut count = 1;
+        for v in iter {
+            if v != prev {
+                res.push((prev, count));
+                count = 0;
+            }
+            count += 1;
+            prev = v;
         }
-        count += 1;
-        prev = v;
+        res.push((prev, count));
+        res
     }
-    res.push((prev, count));
-    res
+
+    /// Decompress given run-length encoded data.
+    ///
+    /// Time complexity is O(N).
+    pub fn decompress<T, I>(iter: I) -> Vec<T>
+    where
+        T: Clone,
+        I: IntoIterator<Item = (T, usize)>,
+    {
+        let mut res = Vec::new();
+        for (t, c) in iter {
+            res.append(&mut vec![t; c]);
+        }
+        res
+    }
 }
 
 /// Calculate maximum sum of subsequence of given iterator with respect to the specified
@@ -209,7 +233,7 @@ where
 
 #[cfg(test)]
 mod test {
-    use super::{compress, is_subsequence_of, max_subsequence, min_subsequence, rle};
+    use super::{compress, is_subsequence_of, max_subsequence, min_subsequence, RLE};
 
     #[test]
     fn test_compress() {
@@ -229,10 +253,30 @@ mod test {
     }
 
     #[test]
-    fn test_rle() {
+    fn test_rle_compress() {
         let v = vec![2, 100, 4, 4, 3, 2, 2, 2];
-        assert_eq!(rle(v), vec![(2, 1), (100, 1), (4, 2), (3, 1), (2, 3)]);
-        assert_eq!(rle(Vec::<usize>::new()), vec![]);
+        assert_eq!(
+            RLE::compress(v),
+            vec![(2, 1), (100, 1), (4, 2), (3, 1), (2, 3)]
+        );
+        assert_eq!(RLE::compress(Vec::<usize>::new()), vec![]);
+    }
+
+    #[test]
+    fn test_rle_decompress() {
+        let v = vec![(2, 1), (100, 1), (4, 2), (3, 1), (2, 3)];
+        assert_eq!(RLE::decompress(v), vec![2, 100, 4, 4, 3, 2, 2, 2]);
+        assert_eq!(RLE::decompress(Vec::<(usize, usize)>::new()), vec![]);
+    }
+
+    #[test]
+    fn test_rle_compress_decompress() {
+        let v = vec![2, 100, 4, 4, 3, 2, 2, 2];
+        assert_eq!(RLE::decompress(RLE::compress(v.clone())), v);
+        assert_eq!(
+            RLE::decompress(RLE::compress(Vec::<usize>::new())),
+            Vec::new()
+        );
     }
 
     #[test]
